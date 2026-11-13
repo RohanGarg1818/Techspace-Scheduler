@@ -656,3 +656,169 @@ Output `200`: the **Meeting** with `"status": "cancelled"`. It stays in the data
 Permanently deletes. No input. Output `204`.
 
 ---
+
+
+## 7. Announcements
+
+Official announcement board for society-wide notices and team-specific updates.
+
+### Who can do what
+
+| Action | ob | faculty | executive | team_lead | member |
+|---|---|---|---|---|---|
+| View announcements | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Post society-wide announcement | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Post team announcement | ✅ (any team) | ❌ | ❌ | ✅ (only for their own team) | ❌ |
+| Edit announcement | ✅ any | ❌ | ❌ | ✅ only ones they created | ❌ |
+| Pin / Unpin announcement | ✅ any | ❌ | ❌ | ✅ only ones they created | ❌ |
+| Delete announcement | ✅ any | ❌ | ❌ | ✅ only ones they created | ❌ |
+
+---
+
+### Data shape: Announcement
+
+| field | type | notes |
+|---|---|---|
+| id | string | UUID |
+| type | string | `"society"` or `"team"`. **Set by server** depending on `teamId` |
+| team | object or null | `{ id, name }`. `null` for society-level announcements |
+| title | string | 1 to 150 characters, trimmed |
+| content | string | Full text / markdown body |
+| priority | string | `"normal"` or `"urgent"` (default `"normal"`) |
+| isPinned | boolean | If `true`, stays pinned to the top of the board (default `false`) |
+| createdBy | object | `{ id, name }`. **Set by server** from the token |
+| createdAt | string | ISO 8601 timestamp |
+| updatedAt | string or null | ISO 8601 timestamp, `null` until edited |
+
+```json
+{
+  "id": "a1",
+  "type": "society",
+  "team": null,
+  "title": "Annual Techfest Schedule & Meeting Guidelines",
+  "content": "All core teams and sub-clubs are requested to submit their upcoming meeting schedules by this Friday to avoid auditorium booking clashes.",
+  "priority": "urgent",
+  "isPinned": true,
+  "createdBy": { "id": "u9", "name": "Aman Verma" },
+  "createdAt": "2026-11-20T10:00:00Z",
+  "updatedAt": null
+}
+```
+
+---
+
+### Endpoints
+
+### GET `/announcements`
+
+Fetch announcements visible to the user. Society-wide announcements are visible to everyone; team announcements can be viewed by all or filtered per team.
+
+Query params (all optional):
+- `type`: `"society"` or `"team"`
+- `teamId`: filter by specific team (e.g. `teamId=t1`)
+- `isPinned`: `true` or `false`
+- `priority`: `"normal"` or `"urgent"`
+- `page`: default `1`
+- `limit`: default `20` (max `100`)
+
+boom: `GET /announcements?type=society&isPinned=true&page=1&limit=20`
+
+Output `200`:
+```json
+{
+  "data": [
+    {
+      "id": "a1",
+      "type": "society",
+      "team": null,
+      "title": "Annual Techfest Schedule & Meeting Guidelines",
+      "content": "All core teams and sub-clubs are requested to submit their upcoming meeting schedules...",
+      "priority": "urgent",
+      "isPinned": true,
+      "createdBy": { "id": "u9", "name": "Aman Verma" },
+      "createdAt": "2026-11-20T10:00:00Z",
+      "updatedAt": null
+    }
+  ],
+  "pagination": { "page": 1, "limit": 20, "total": 1 }
+}
+```
+
+*Sorting order:* Pinned posts (`isPinned: true`) always appear first, sorted by `createdAt DESC`, followed by unpinned announcements sorted by `createdAt DESC`.
+
+### GET `/announcements/:id`
+
+boom: `GET /announcements/a1`
+
+Output `200`: one **Announcement**.  
+Errors: `404 NOT_FOUND` if the id does not exist.
+
+### POST `/announcements` (ob or team_lead)
+
+Create a new announcement.
+
+Input (Society-wide announcement by an OB):
+```json
+{
+  "title": "Orientation Dates Announced",
+  "content": "Techspace society orientation will take place on November 25th in the Auditorium.",
+  "priority": "urgent",
+  "isPinned": true
+}
+```
+
+Input (Team announcement by a Team Lead or OB):
+```json
+{
+  "teamId": "t1",
+  "title": "Git Workshop Practice Files",
+  "content": "Please clone the starter repository before coming to Wednesday's meeting.",
+  "priority": "normal",
+  "isPinned": false
+}
+```
+
+Rules:
+1. `title` (required, 1 to 150 characters) and `content` (required, non-empty string).
+2. If `teamId` is omitted or `null`: only `ob` role can create it (`type` becomes `"society"`). If a non-OB tries, returns `403 FORBIDDEN`.
+3. If `teamId` is provided: `team_lead` can only create announcements for a team they lead (position `lead` or `colead`). `ob` can create announcements for any team.
+4. `priority`: optional, must be `"normal"` or `"urgent"`. Defaults to `"normal"`.
+5. `isPinned`: optional boolean. Defaults to `false`.
+
+Output `201`: the created **Announcement**.
+
+Errors:
+- `400 VALIDATION_ERROR`: title/content missing or invalid priority value.
+- `403 FORBIDDEN`: user is not an OB (when `teamId` is null), or team lead does not lead the specified team.
+- `404 NOT_FOUND`: specified `teamId` does not exist.
+
+### PATCH `/announcements/:id` (creator or ob)
+
+Update an announcement. Send only the fields you want to change (`title`, `content`, `priority`, `isPinned`).
+
+boom: pin an announcement and mark it urgent:
+```json
+{
+  "priority": "urgent",
+  "isPinned": true
+}
+```
+
+Output `200`: updated **Announcement** (with updated `updatedAt` timestamp).
+
+Errors:
+- `400 VALIDATION_ERROR`: invalid field values.
+- `403 FORBIDDEN`: caller is neither an OB nor the creator of this announcement.
+- `404 NOT_FOUND`: announcement doesn't exist.
+
+### DELETE `/announcements/:id` (creator or ob)
+
+Deletes an announcement.
+
+No input. Output `204` (empty).
+
+Errors:
+- `403 FORBIDDEN`: caller is neither an OB nor the creator of this announcement.
+- `404 NOT_FOUND`: announcement doesn't exist.
+
+---
