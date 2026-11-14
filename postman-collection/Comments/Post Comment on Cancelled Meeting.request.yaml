@@ -1,0 +1,14 @@
+$kind: http-request
+description: Post a comment on a cancelled meeting - should still return 201 (comments allowed on cancelled meetings). Cancel meetingId first. Uses meetingId.
+url: "{{baseUrl}}/meetings/{{meetingId}}/comments"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Will this meeting be rescheduled?"
+    }
+order: 17000

@@ -1,0 +1,17 @@
+$kind: http-request
+description: Force-create a meeting despite clash using ?acknowledgeClash=true
+url: "{{baseUrl}}/meetings?acknowledgeClash=true"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "topic": "Acknowledged Clash Meeting",
+      "date": "2026-11-20",
+      "startTime": "15:30",
+      "endTime": "16:30"
+    }
+order: 16000

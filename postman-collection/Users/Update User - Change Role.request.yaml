@@ -1,0 +1,14 @@
+$kind: http-request
+description: Change a user's role to executive (OB only). Uses userId variable.
+url: "{{baseUrl}}/users/{{userId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "role": "executive"
+    }
+order: 15000

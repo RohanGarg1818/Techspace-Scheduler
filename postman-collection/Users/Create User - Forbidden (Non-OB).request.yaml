@@ -1,0 +1,17 @@
+$kind: http-request
+description: Create user while logged in as a non-OB - should return 403 FORBIDDEN. Login as member first.
+url: "{{baseUrl}}/users"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Sneaky",
+      "email": "sneaky@techspace.com",
+      "password": "password123",
+      "role": "member"
+    }
+order: 14000

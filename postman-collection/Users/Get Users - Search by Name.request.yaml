@@ -1,0 +1,7 @@
+$kind: http-request
+description: Search users by name or email using the q param
+url: "{{baseUrl}}/users?q=priyanshu"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 3000

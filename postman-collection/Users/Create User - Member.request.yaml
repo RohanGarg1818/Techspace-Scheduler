@@ -1,0 +1,26 @@
+$kind: http-request
+description: Create a plain member user (OB only). Saves userId to collection variable.
+url: "{{baseUrl}}/users"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Test Member",
+      "email": "testmember@techspace.com",
+      "password": "password123",
+      "role": "member"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 201) {
+          const response = pm.response.json();
+          pm.collectionVariables.set('userId', response.data.id);
+          console.log('userId saved:', response.data.id);
+      }
+    language: text/javascript
+order: 7000

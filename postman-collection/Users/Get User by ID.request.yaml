@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get a single user by ID. Uses userId variable set by Create User.
+url: "{{baseUrl}}/users/{{userId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 5000

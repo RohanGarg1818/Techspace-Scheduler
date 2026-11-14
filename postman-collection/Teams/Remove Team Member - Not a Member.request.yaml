@@ -1,0 +1,7 @@
+$kind: http-request
+description: Remove a user who is not on the team - should return 404 NOT_FOUND. Uses teamId and userId (userId must not be in teamId).
+url: "{{baseUrl}}/teams/{{teamId}}/members/{{userId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+order: 15000

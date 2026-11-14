@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get replies to a specific comment on a meeting. Uses meetingId and commentId.
+url: "{{baseUrl}}/meetings/{{meetingId}}/comments?parentCommentId={{commentId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 19000

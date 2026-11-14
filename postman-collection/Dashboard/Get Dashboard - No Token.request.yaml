@@ -1,0 +1,5 @@
+$kind: http-request
+description: Access dashboard without token - should return 401 UNAUTHENTICATED
+url: "{{baseUrl}}/dashboard"
+method: GET
+order: 2000

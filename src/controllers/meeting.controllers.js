@@ -337,8 +337,13 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     }
   }
 
-  // Clash check unless acknowledged
-  if (req.query.acknowledgeClash !== "true") {
+  // Clash check unless acknowledged, or unless date/time are unchanged
+  const timeUnchanged =
+    finalDate === meeting.date &&
+    finalStartTime === meeting.startTime &&
+    finalEndTime === meeting.endTime;
+
+  if (!timeUnchanged && req.query.acknowledgeClash !== "true") {
     const clashes = await findMeetingClashes({
       date: finalDate,
       startTime: finalStartTime,

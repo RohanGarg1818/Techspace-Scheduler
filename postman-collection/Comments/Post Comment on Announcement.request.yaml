@@ -1,0 +1,23 @@
+$kind: http-request
+description: Post a top-level comment on an announcement. Uses announcementId. Saves commentId.
+url: "{{baseUrl}}/announcements/{{announcementId}}/comments"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Will the practice files be shared before Wednesday?"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 201) {
+          const response = pm.response.json();
+          pm.collectionVariables.set('commentId', response.data.id);
+          console.log('commentId saved:', response.data.id);
+      }
+    language: text/javascript
+order: 3000

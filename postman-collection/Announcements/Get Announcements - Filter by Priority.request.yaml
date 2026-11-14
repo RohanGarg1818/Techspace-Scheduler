@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get only urgent announcements
+url: "{{baseUrl}}/announcements?priority=urgent"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 3000

@@ -1,0 +1,7 @@
+$kind: http-request
+description: Cancel an already-cancelled meeting - should return 409 CONFLICT. Cancel the meeting first, then run this.
+url: "{{baseUrl}}/meetings/{{meetingId}}/cancel"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+order: 26000

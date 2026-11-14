@@ -1,0 +1,15 @@
+$kind: http-request
+description: Reply to a comment on a meeting. Uses meetingId and commentId (parent).
+url: "{{baseUrl}}/meetings/{{meetingId}}/comments"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Yes, Room 204 is booked.",
+      "parentCommentId": "{{commentId}}"
+    }
+order: 16000

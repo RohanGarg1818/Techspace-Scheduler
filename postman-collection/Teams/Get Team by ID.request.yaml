@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get a single team with full member list. Uses teamId variable.
+url: "{{baseUrl}}/teams/{{teamId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 4000

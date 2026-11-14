@@ -1,0 +1,14 @@
+$kind: http-request
+description: Post a comment on a non-existent announcement - should return 404 NOT_FOUND
+url: "{{baseUrl}}/announcements/00000000-0000-0000-0000-000000000000/comments"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Nobody home"
+    }
+order: 7000

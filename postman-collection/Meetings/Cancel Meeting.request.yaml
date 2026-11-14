@@ -1,0 +1,7 @@
+$kind: http-request
+description: Cancel a meeting (creator or OB). Uses meetingId variable. Status becomes 'cancelled'.
+url: "{{baseUrl}}/meetings/{{meetingId}}/cancel"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+order: 25000

@@ -1,0 +1,14 @@
+$kind: http-request
+description: Create user with missing required fields - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/users"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "No Email"
+    }
+order: 11000

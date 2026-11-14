@@ -1,0 +1,17 @@
+$kind: http-request
+description: Check a time slot that has no clashes
+url: "{{baseUrl}}/meetings/check-clash"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "date": "2026-12-25",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "excludeMeetingId": null
+    }
+order: 10000

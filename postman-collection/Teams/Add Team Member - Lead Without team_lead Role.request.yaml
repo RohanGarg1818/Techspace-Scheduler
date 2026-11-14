@@ -1,0 +1,14 @@
+$kind: http-request
+description: Assign lead position to a user who is not role=team_lead - should return 400 VALIDATION_ERROR. Uses teamId and userId (must be a non-team_lead user).
+url: "{{baseUrl}}/teams/{{teamId}}/members/{{userId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "position": "lead"
+    }
+order: 13000

@@ -1,0 +1,14 @@
+$kind: http-request
+description: User who is not the creator or OB tries to edit - should return 403 FORBIDDEN. Login as a different non-OB user. Uses announcementId.
+url: "{{baseUrl}}/announcements/{{announcementId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "isPinned": false
+    }
+order: 14000
