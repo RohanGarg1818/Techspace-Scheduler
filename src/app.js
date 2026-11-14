@@ -5,6 +5,7 @@ import healthCheckRouter from "./routes/healthcheck.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
 import teamRouter from "./routes/team.routes.js";
+import dashboardRouter from "./routes/dashboard.routes.js";
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/v1/healthcheck", healthCheckRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/teams", teamRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
 
 // Global Error-Handling Middleware
 app.use((err, req, res, _next) => {
