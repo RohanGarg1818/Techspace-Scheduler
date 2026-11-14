@@ -98,7 +98,7 @@ export const validateUserCrossFieldRules = async (
   }
 
   // 3. obTitle is only allowed when role = "ob".
-  if (role !== UserRolesEnum.OB && obTitle) {
+  if (role !== UserRolesEnum.OB && obTitle !== null && obTitle !== "") {
     details.push({
       field: "obTitle",
       issue: "obTitle is only allowed when role is ob",

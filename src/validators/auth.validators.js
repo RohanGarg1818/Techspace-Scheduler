@@ -21,6 +21,6 @@ export const userChangeCurrentPasswordValidator = () => {
       .notEmpty()
       .withMessage("New password is required")
       .isLength({ min: 8, max: 100 })
-      .withMessage("New password must be at least 8 characters"),
+      .withMessage("New password must be between 8 and 100 characters"),
   ];
 };

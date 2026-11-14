@@ -22,7 +22,7 @@ export const createUserValidator = () => {
       .notEmpty()
       .withMessage("Password is required")
       .isLength({ min: 8, max: 100 })
-      .withMessage("Password must be at least 8 characters"),
+      .withMessage("Password must be between 8 and 100 characters"),
     body("role")
       .trim()
       .notEmpty()
@@ -67,7 +67,7 @@ export const updateUserValidator = () => {
       .notEmpty()
       .withMessage("Password cannot be empty")
       .isLength({ min: 8, max: 100 })
-      .withMessage("Password must be at least 8 characters"),
+      .withMessage("Password must be between 8 and 100 characters"),
     body("role")
       .optional()
       .trim()
