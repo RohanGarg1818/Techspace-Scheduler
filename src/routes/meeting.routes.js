@@ -9,6 +9,10 @@ import {
   deleteMeeting,
 } from "../controllers/meeting.controllers.js";
 import {
+  getMeetingComments,
+  createMeetingComment,
+} from "../controllers/comment.controllers.js";
+import {
   authenticate,
   isOB,
   isOBOrTeamLead,
@@ -19,6 +23,8 @@ import {
   updateMeetingValidator,
   checkClashValidator,
   getMeetingsQueryValidator,
+  createCommentValidator,
+  getCommentsQueryValidator,
   userParamValidator,
 } from "../validators/index.js";
 
@@ -52,7 +58,25 @@ router.post(
   createMeeting,
 );
 
-// 4. Get meeting by ID
+// 4. Comments on meetings
+router.get(
+  "/:id/comments",
+  authenticate,
+  userParamValidator("id"),
+  getCommentsQueryValidator(),
+  validate,
+  getMeetingComments,
+);
+router.post(
+  "/:id/comments",
+  authenticate,
+  userParamValidator("id"),
+  createCommentValidator(),
+  validate,
+  createMeetingComment,
+);
+
+// 5. Get meeting by ID
 router.get(
   "/:id",
   authenticate,
@@ -61,7 +85,7 @@ router.get(
   getMeetingById,
 );
 
-// 5. Update meeting (creator or OB)
+// 6. Update meeting (creator or OB)
 router.patch(
   "/:id",
   authenticate,
@@ -71,7 +95,7 @@ router.patch(
   updateMeeting,
 );
 
-// 6. Cancel meeting (creator or OB)
+// 7. Cancel meeting (creator or OB)
 router.post(
   "/:id/cancel",
   authenticate,
@@ -80,7 +104,7 @@ router.post(
   cancelMeeting,
 );
 
-// 7. Delete meeting permanently (OB only)
+// 8. Delete meeting permanently (OB only)
 router.delete(
   "/:id",
   authenticate,

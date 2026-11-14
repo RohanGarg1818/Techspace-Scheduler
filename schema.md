@@ -997,7 +997,6 @@ Discussion and replies on announcements and meetings.
 
 ### Data shape: Comment
 
-<<<<<<< HEAD
 | field           | type           | notes                                                                        |
 | --------------- | -------------- | ---------------------------------------------------------------------------- |
 | id              | string         | UUID                                                                         |
@@ -1008,23 +1007,6 @@ Discussion and replies on announcements and meetings.
 | createdBy       | object         | `{ id, name }`. **Set by server** from the token                             |
 | createdAt       | string         | ISO 8601 timestamp                                                           |
 | updatedAt       | string or null | ISO 8601 timestamp, `null` until edited                                      |
-
-Rules for the shape:
-
-- **Exactly one** of `announcementId` and `meetingId` is set, the other is `null`.
-- Threads are **one level deep**: a reply (`parentCommentId` set) cannot itself be replied to. Replies always point to a top-level comment.
-=======
-| field | type | notes |
-|---|---|---|
-| id | string | UUID |
-| announcementId | string or null | UUID of the announcement (if commenting on an announcement) |
-| meetingId | string or null | UUID of the meeting (if commenting on a meeting) |
-| content | string | 1 to 1000 characters, trimmed |
-| parentCommentId | string or null | UUID of the top-level comment this replies to, `null` for top-level comments |
-| createdBy | object | `{ id, name }`. **Set by server** from the token |
-| createdAt | string | ISO 8601 timestamp |
-| updatedAt | string or null | ISO 8601 timestamp, `null` until edited |
->>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
 
 Rules for the shape:
 - **Exactly one** of `announcementId` and `meetingId` is set, the other is `null`.
@@ -1133,10 +1115,6 @@ Rules:
 Output `201`: the created **Comment**.
 
 Errors:
-<<<<<<< HEAD
-
-=======
->>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
 - `400 VALIDATION_ERROR`: content missing, empty, or exceeds 1000 characters, or `parentCommentId` points to a reply.
 - `401 UNAUTHENTICATED`: missing or invalid token.
 - `404 NOT_FOUND`: announcement or `parentCommentId` does not exist.
@@ -1179,11 +1157,7 @@ Delete a comment. Authors can delete their own comments; OBs can delete any comm
 
 No input. Output `204` (empty).
 
-<<<<<<< HEAD
-_Delete rule:_ this is a **hard delete**. The comment is removed permanently. Deleting a top-level comment also permanently deletes all of its replies. Deleting a reply removes only that reply.
-=======
 *Delete rule:* this is a **hard delete**. The comment is removed permanently. Deleting a top-level comment also permanently deletes all of its replies. Deleting a reply removes only that reply.
->>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
 
 Errors:
 
