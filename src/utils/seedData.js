@@ -11,7 +11,6 @@ export const seedDatabase = async () => {
     name: "Tech Team",
     type: TeamTypeEnum.CORE,
     description: "Builds and maintains society tech",
-    memberCount: 0,
   };
 
   const designClub = {
@@ -19,7 +18,6 @@ export const seedDatabase = async () => {
     name: "Design Club",
     type: TeamTypeEnum.SUBCLUB,
     description: "UI/UX and graphics",
-    memberCount: 0,
   };
 
   await db.createTeam(techTeam);
@@ -106,17 +104,6 @@ export const seedDatabase = async () => {
   for (const user of users) {
     await db.createUser(user);
   }
-
-  techTeam.memberCount = users.filter((u) =>
-    u.teams.some((t) => t.teamId === techTeam.id),
-  ).length;
-
-  designClub.memberCount = users.filter((u) =>
-    u.teams.some((t) => t.teamId === designClub.id),
-  ).length;
-
-  await db.updateTeam(techTeam.id, { memberCount: techTeam.memberCount });
-  await db.updateTeam(designClub.id, { memberCount: designClub.memberCount });
 
   console.log("Database seeded successfully!");
   console.log("\nTest credentials:");

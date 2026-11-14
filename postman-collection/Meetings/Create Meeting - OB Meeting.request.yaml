@@ -1,0 +1,28 @@
+$kind: http-request
+description: Create an OB meeting (no teamId). Must be logged in as OB. Saves meetingId.
+url: "{{baseUrl}}/meetings"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "topic": "Monthly OB Sync",
+      "date": "2026-11-20",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "note": "Bring agenda",
+      "location": "Room 101"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 201) {
+          const response = pm.response.json();
+          pm.collectionVariables.set('meetingId', response.data.id);
+          console.log('meetingId saved:', response.data.id);
+      }
+    language: text/javascript
+order: 13000

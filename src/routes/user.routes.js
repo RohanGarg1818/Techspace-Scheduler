@@ -19,10 +19,23 @@ const router = Router();
 
 // Authenticated users can view users
 router.get("/", authenticate, getUsersQueryValidator(), validate, getUsers);
-router.get("/:id", authenticate, userParamValidator("id"), validate, getUserById);
+router.get(
+  "/:id",
+  authenticate,
+  userParamValidator("id"),
+  validate,
+  getUserById,
+);
 
 // OB only routes
-router.post("/", authenticate, isOB, createUserValidator(), validate, createUser);
+router.post(
+  "/",
+  authenticate,
+  isOB,
+  createUserValidator(),
+  validate,
+  createUser,
+);
 router.patch(
   "/:id",
   authenticate,

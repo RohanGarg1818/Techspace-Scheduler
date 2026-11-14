@@ -1,0 +1,14 @@
+$kind: http-request
+description: Edit a comment's content (author only). Uses commentId variable.
+url: "{{baseUrl}}/comments/{{commentId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Updated: Will the files be shared before Tuesday?"
+    }
+order: 10000

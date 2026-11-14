@@ -1,0 +1,14 @@
+$kind: http-request
+description: Change email to one already in use - should return 409 CONFLICT. Uses userId variable.
+url: "{{baseUrl}}/users/{{userId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "aman@techspace.com"
+    }
+order: 18000

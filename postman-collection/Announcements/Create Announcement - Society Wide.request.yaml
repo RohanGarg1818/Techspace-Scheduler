@@ -1,0 +1,26 @@
+$kind: http-request
+description: Create a society-wide announcement (OB only). Saves announcementId.
+url: "{{baseUrl}}/announcements"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "title": "Annual Techfest Dates Announced",
+      "content": "Techspace society orientation will take place on November 25th in the Auditorium.",
+      "priority": "urgent",
+      "isPinned": true
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 201) {
+          const response = pm.response.json();
+          pm.collectionVariables.set('announcementId', response.data.id);
+          console.log('announcementId saved:', response.data.id);
+      }
+    language: text/javascript
+order: 6000

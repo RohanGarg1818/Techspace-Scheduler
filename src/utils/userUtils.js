@@ -1,10 +1,6 @@
 import db from "../db/index.js";
 import { ApiError } from "./apiError.js";
-import {
-  ErrorCodeEnum,
-  UserRolesEnum,
-  TeamPositionEnum,
-} from "./constants.js";
+import { ErrorCodeEnum, UserRolesEnum, TeamPositionEnum } from "./constants.js";
 
 /**
  * Checks whether a position is a lead or co-lead position.
@@ -38,9 +34,15 @@ export const userLeadsTeam = (user, teamId) =>
  * - Expands teams with teamId, teamName, position
  */
 export const formatUserResponse = async (user) => {
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
-  const { password: _password, deletedAt: _deletedAt, ...userWithoutPassword } = user;
+  const {
+    password: _password,
+    deletedAt: _deletedAt,
+    ...userWithoutPassword
+  } = user;
 
   const userTeams = [];
   if (user.teams && user.teams.length > 0) {
@@ -69,7 +71,11 @@ export const formatUserResponse = async (user) => {
  * 3. obTitle is only allowed when role = "ob".
  * 4. Every teamId must exist (else 404 NOT_FOUND).
  */
-export const validateUserCrossFieldRules = async (role, obTitle, teams = []) => {
+export const validateUserCrossFieldRules = async (
+  role,
+  obTitle,
+  teams = [],
+) => {
   const details = [];
 
   const hasLeadOrColead = hasLeadOrColeadPosition(teams);
@@ -78,7 +84,8 @@ export const validateUserCrossFieldRules = async (role, obTitle, teams = []) => 
   if (role === UserRolesEnum.TEAM_LEAD && !hasLeadOrColead) {
     details.push({
       field: "teams",
-      issue: "role team_lead needs at least one team with position lead or colead",
+      issue:
+        "role team_lead needs at least one team with position lead or colead",
     });
   }
 
@@ -91,7 +98,7 @@ export const validateUserCrossFieldRules = async (role, obTitle, teams = []) => 
   }
 
   // 3. obTitle is only allowed when role = "ob".
-  if (role !== UserRolesEnum.OB && obTitle) {
+  if (role !== UserRolesEnum.OB && obTitle !== null && obTitle !== "") {
     details.push({
       field: "obTitle",
       issue: "obTitle is only allowed when role is ob",

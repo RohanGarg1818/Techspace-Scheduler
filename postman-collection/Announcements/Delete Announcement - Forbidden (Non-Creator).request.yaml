@@ -1,0 +1,7 @@
+$kind: http-request
+description: Non-creator non-OB tries to delete - should return 403 FORBIDDEN. Login as different user. Uses announcementId.
+url: "{{baseUrl}}/announcements/{{announcementId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+order: 16000

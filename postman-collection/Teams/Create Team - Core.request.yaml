@@ -1,0 +1,25 @@
+$kind: http-request
+description: Create a new core team (OB only). Saves new teamId to variable.
+url: "{{baseUrl}}/teams"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Events Team",
+      "type": "core",
+      "description": "Handles all society events"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 201) {
+          const response = pm.response.json();
+          pm.collectionVariables.set('teamId', response.data.id);
+          console.log('teamId saved:', response.data.id);
+      }
+    language: text/javascript
+order: 6000

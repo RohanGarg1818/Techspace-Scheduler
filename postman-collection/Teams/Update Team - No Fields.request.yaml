@@ -1,0 +1,11 @@
+$kind: http-request
+description: PATCH with empty body - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/teams/{{teamId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: "{}"
+order: 11000

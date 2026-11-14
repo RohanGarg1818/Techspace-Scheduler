@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get aggregated dashboard data - counts, OBs, executives, coreTeams, subClubs. Available to all authenticated users.
+url: "{{baseUrl}}/dashboard"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 1000

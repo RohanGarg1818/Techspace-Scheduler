@@ -46,12 +46,11 @@ export const getAnnouncementComments = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        comments: items,
         items,
         pagination: {
-          currentPage: parsedPage,
+          page: parsedPage,
           limit: parsedLimit,
-          totalComments: total,
+          total,
           totalPages,
           hasNextPage: parsedPage < totalPages,
           hasPreviousPage: parsedPage > 1,
@@ -111,9 +110,9 @@ export const createAnnouncementComment = asyncHandler(async (req, res) => {
 
   await db.createComment(newComment);
 
-  res.status(201).json(
-    new ApiResponse(201, newComment, "Comment posted successfully"),
-  );
+  res
+    .status(201)
+    .json(new ApiResponse(201, newComment, "Comment posted successfully"));
 });
 
 /**
@@ -157,12 +156,11 @@ export const getMeetingComments = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        comments: items,
         items,
         pagination: {
-          currentPage: parsedPage,
+          page: parsedPage,
           limit: parsedLimit,
-          totalComments: total,
+          total,
           totalPages,
           hasNextPage: parsedPage < totalPages,
           hasPreviousPage: parsedPage > 1,
@@ -222,9 +220,9 @@ export const createMeetingComment = asyncHandler(async (req, res) => {
 
   await db.createComment(newComment);
 
-  res.status(201).json(
-    new ApiResponse(201, newComment, "Comment posted successfully"),
-  );
+  res
+    .status(201)
+    .json(new ApiResponse(201, newComment, "Comment posted successfully"));
 });
 
 /**
@@ -238,9 +236,9 @@ export const getCommentById = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Comment not found");
   }
 
-  res.status(200).json(
-    new ApiResponse(200, comment, "Comment fetched successfully"),
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, comment, "Comment fetched successfully"));
 });
 
 /**
@@ -273,9 +271,9 @@ export const updateComment = asyncHandler(async (req, res) => {
 
   const updatedComment = await db.getCommentById(id);
 
-  res.status(200).json(
-    new ApiResponse(200, updatedComment, "Comment updated successfully"),
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, updatedComment, "Comment updated successfully"));
 });
 
 /**

@@ -1,0 +1,7 @@
+$kind: http-request
+description: OB tries to delete themselves - should return 409 CONFLICT. Set userId to the OB's own ID first.
+url: "{{baseUrl}}/users/{{userId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+order: 22000

@@ -1,0 +1,7 @@
+$kind: http-request
+description: Non-OB tries to permanently delete a meeting - should return 403 FORBIDDEN. Login as team lead or member. Uses meetingId.
+url: "{{baseUrl}}/meetings/{{meetingId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+order: 29000

@@ -1,0 +1,19 @@
+$kind: http-request
+description: Create a team meeting. Login as Team Lead (priyanshu). Uses teamId variable.
+url: "{{baseUrl}}/meetings"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "teamId": "{{teamId}}",
+      "topic": "Sprint Planning",
+      "date": "2026-11-25",
+      "startTime": "14:00",
+      "endTime": "15:30",
+      "location": "Room 204"
+    }
+order: 14000

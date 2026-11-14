@@ -1,0 +1,17 @@
+$kind: http-request
+description: Check a time slot that clashes with an existing meeting. Create a meeting first, then use the same date and overlapping time.
+url: "{{baseUrl}}/meetings/check-clash"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "date": "2026-11-20",
+      "startTime": "14:30",
+      "endTime": "16:00",
+      "excludeMeetingId": null
+    }
+order: 11000

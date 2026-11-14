@@ -1,0 +1,14 @@
+$kind: http-request
+description: Non-author tries to edit a comment - should return 403 FORBIDDEN. Login as a different user. Uses commentId.
+url: "{{baseUrl}}/comments/{{commentId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Sneaky edit attempt"
+    }
+order: 11000

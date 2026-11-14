@@ -1,0 +1,23 @@
+$kind: http-request
+description: Post a comment on a meeting. Any logged-in user can comment. Uses meetingId. Saves commentId.
+url: "{{baseUrl}}/meetings/{{meetingId}}/comments"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Will we have a room confirmed by then?"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 201) {
+          const response = pm.response.json();
+          pm.collectionVariables.set('commentId', response.data.id);
+          console.log('commentId saved:', response.data.id);
+      }
+    language: text/javascript
+order: 15000

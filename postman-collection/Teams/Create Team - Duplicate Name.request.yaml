@@ -1,0 +1,15 @@
+$kind: http-request
+description: Create a team with a name that already exists - should return 409 CONFLICT
+url: "{{baseUrl}}/teams"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Tech Team",
+      "type": "core"
+    }
+order: 8000

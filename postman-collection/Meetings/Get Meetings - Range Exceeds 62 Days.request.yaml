@@ -1,0 +1,7 @@
+$kind: http-request
+description: Date range over 62 days - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/meetings?from=2026-01-01&to=2026-12-31"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 7000

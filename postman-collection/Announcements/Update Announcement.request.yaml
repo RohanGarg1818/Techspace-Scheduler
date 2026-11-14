@@ -1,0 +1,15 @@
+$kind: http-request
+description: Update an announcement's priority and pin status (creator or OB). Uses announcementId.
+url: "{{baseUrl}}/announcements/{{announcementId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "priority": "urgent",
+      "isPinned": true
+    }
+order: 13000

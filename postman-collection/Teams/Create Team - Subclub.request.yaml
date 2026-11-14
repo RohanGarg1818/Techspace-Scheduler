@@ -1,0 +1,15 @@
+$kind: http-request
+description: Create a new sub-club (OB only).
+url: "{{baseUrl}}/teams"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Photography Club",
+      "type": "subclub"
+    }
+order: 7000

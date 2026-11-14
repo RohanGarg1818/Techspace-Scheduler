@@ -1,0 +1,15 @@
+$kind: http-request
+description: Delete a team permanently (OB only). Uses teamId variable. Clears teamId after success.
+url: "{{baseUrl}}/teams/{{teamId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 204) {
+          pm.collectionVariables.set('teamId', '');
+          console.log('Team deleted, teamId cleared');
+      }
+    language: text/javascript
+order: 16000

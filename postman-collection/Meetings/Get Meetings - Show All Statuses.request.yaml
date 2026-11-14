@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get all meetings regardless of status (scheduled + cancelled)
+url: "{{baseUrl}}/meetings?from=2026-11-01&to=2026-11-30&status=all"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 5000

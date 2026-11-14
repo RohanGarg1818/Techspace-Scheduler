@@ -1,0 +1,7 @@
+$kind: http-request
+description: Call without required 'from' param - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/meetings?to=2026-11-30"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 6000

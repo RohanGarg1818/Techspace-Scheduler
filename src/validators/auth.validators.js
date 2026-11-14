@@ -8,24 +8,19 @@ export const userLoginValidator = () => {
       .withMessage("Email is required")
       .isEmail()
       .withMessage("Invalid email address"),
-    body("password")
-      .trim()
-      .notEmpty()
-      .withMessage("Password is required"),
+    body("password").notEmpty().withMessage("Password is required"),
   ];
 };
 
 export const userChangeCurrentPasswordValidator = () => {
   return [
     body("currentPassword")
-      .trim()
       .notEmpty()
       .withMessage("Current password is required"),
     body("newPassword")
-      .trim()
       .notEmpty()
       .withMessage("New password is required")
       .isLength({ min: 8, max: 100 })
-      .withMessage("New password must be at least 8 characters"),
+      .withMessage("New password must be between 8 and 100 characters"),
   ];
 };

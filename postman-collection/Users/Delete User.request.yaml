@@ -1,0 +1,15 @@
+$kind: http-request
+description: Soft-delete a user (OB only). Uses userId variable. Clears userId after success.
+url: "{{baseUrl}}/users/{{userId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 204) {
+          pm.collectionVariables.set('userId', '');
+          console.log('User deleted, userId cleared');
+      }
+    language: text/javascript
+order: 21000

@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get a single announcement by ID. Uses announcementId variable.
+url: "{{baseUrl}}/announcements/{{announcementId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 4000

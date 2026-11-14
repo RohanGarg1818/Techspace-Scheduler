@@ -1,0 +1,18 @@
+$kind: http-request
+description: Create an OB user with obTitle (OB only).
+url: "{{baseUrl}}/users"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "New OB",
+      "email": "newob@techspace.com",
+      "password": "password123",
+      "role": "ob",
+      "obTitle": "Secretary"
+    }
+order: 8000

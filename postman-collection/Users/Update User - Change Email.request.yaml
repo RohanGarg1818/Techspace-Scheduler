@@ -1,0 +1,14 @@
+$kind: http-request
+description: Change a user's email. Uses userId variable.
+url: "{{baseUrl}}/users/{{userId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "updated@techspace.com"
+    }
+order: 17000
