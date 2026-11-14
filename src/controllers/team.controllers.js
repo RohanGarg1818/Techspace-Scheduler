@@ -2,10 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import {
-  ErrorCodeEnum,
-  UserRolesEnum,
-} from "../utils/constants.js";
+import { ErrorCodeEnum, UserRolesEnum } from "../utils/constants.js";
 import { formatTeamResponse } from "../utils/teamUtils.js";
 import { isLeadPosition, hasLeadOrColeadPosition } from "../utils/userUtils.js";
 import db from "../db/index.js";
@@ -23,7 +20,10 @@ export const getTeams = asyncHandler(async (req, res) => {
     teams = teams.filter((t) => t.type === type);
   }
 
-  const items = await Promise.all(teams.map((t) => formatTeamResponse(t)));
+  const allUsers = await db.getAllUsers();
+  const items = await Promise.all(
+    teams.map((t) => formatTeamResponse(t, false, allUsers)),
+  );
 
   res.status(200).json(
     new ApiResponse(

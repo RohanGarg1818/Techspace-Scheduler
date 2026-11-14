@@ -28,6 +28,13 @@ export const authenticate = asyncHandler(async (req, res, next) => {
         "User no longer exists",
       );
     }
+    if (user.passwordChangedAt && decoded.pwv !== user.passwordChangedAt) {
+      throw new ApiError(
+        401,
+        ErrorCodeEnum.UNAUTHENTICATED,
+        "Password was changed. Please log in again.",
+      );
+    }
     const { password: _password, ...safeUser } = user;
     req.user = safeUser;
     next();

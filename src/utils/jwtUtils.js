@@ -20,6 +20,23 @@ export const generateToken = (payload) => {
 };
 
 /**
+ * Generate a token that embeds the user's current passwordChangedAt timestamp.
+ * authenticate() will reject tokens issued before the latest password change.
+ */
+export const generateTokenWithPasswordVersion = (user) => {
+  return jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      pwv: user.passwordChangedAt ?? 0,
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN },
+  );
+};
+
+/**
  * Verify and decode a JWT token
  * @param {string} token - JWT token
  * @returns {object} - Decoded payload

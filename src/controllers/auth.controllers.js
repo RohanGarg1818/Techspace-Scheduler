@@ -3,7 +3,7 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ErrorCodeEnum } from "../utils/constants.js";
 import { hashPassword, comparePassword } from "../utils/passwordUtils.js";
-import { generateToken } from "../utils/jwtUtils.js";
+import { generateTokenWithPasswordVersion } from "../utils/jwtUtils.js";
 import { formatUserResponse } from "../utils/userUtils.js";
 import db from "../db/index.js";
 
@@ -31,11 +31,7 @@ export const login = asyncHandler(async (req, res) => {
     );
   }
 
-  const token = generateToken({
-    id: user.id,
-    email: user.email,
-    role: user.role,
-  });
+  const token = generateTokenWithPasswordVersion(user);
 
   const userResponse = await formatUserResponse(user);
 
@@ -84,7 +80,10 @@ export const changePassword = asyncHandler(async (req, res) => {
   }
 
   const hashedPassword = await hashPassword(newPassword);
-  await db.updateUser(req.user.id, { password: hashedPassword });
+  await db.updateUser(req.user.id, {
+    password: hashedPassword,
+    passwordChangedAt: Date.now(),
+  });
 
   res.status(204).send();
 });

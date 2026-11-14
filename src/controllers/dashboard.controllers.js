@@ -22,6 +22,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
   let officeBearersCount = 0;
   let executivesCount = 0;
   let teamLeadsCount = 0;
+  let facultyCount = 0;
 
   const officeBearers = [];
   const executives = [];
@@ -49,12 +50,15 @@ export const getDashboardData = asyncHandler(async (req, res) => {
       case UserRolesEnum.MEMBER:
         membersCount++;
         break;
+      case UserRolesEnum.FACULTY:
+        facultyCount++;
+        break;
       default:
         break;
     }
   }
 
-  // Format teams into coreTeams and subClubs
+  // Format teams — pass allUsers so formatTeamResponse doesn't re-fetch per team
   const coreTeamObjects = allTeams.filter((t) => t.type === TeamTypeEnum.CORE);
   const subClubObjects = allTeams.filter(
     (t) => t.type === TeamTypeEnum.SUBCLUB,
@@ -63,7 +67,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
   const [coreTeams, subClubs] = await Promise.all([
     Promise.all(
       coreTeamObjects.map(async (t) => {
-        const formatted = await formatTeamResponse(t);
+        const formatted = await formatTeamResponse(t, false, allUsers);
         return {
           id: formatted.id,
           name: formatted.name,
@@ -75,7 +79,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
     ),
     Promise.all(
       subClubObjects.map(async (t) => {
-        const formatted = await formatTeamResponse(t);
+        const formatted = await formatTeamResponse(t, false, allUsers);
         return {
           id: formatted.id,
           name: formatted.name,
@@ -93,6 +97,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
       officeBearers: officeBearersCount,
       executives: executivesCount,
       teamLeads: teamLeadsCount,
+      faculty: facultyCount,
     },
     officeBearers,
     executives,
