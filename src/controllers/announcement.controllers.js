@@ -5,10 +5,10 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import {
   ErrorCodeEnum,
   UserRolesEnum,
-  TeamPositionEnum,
   AnnouncementTypeEnum,
   AnnouncementPriorityEnum,
 } from "../utils/constants.js";
+import { userLeadsTeam } from "../utils/userUtils.js";
 import db from "../db/index.js";
 
 /**
@@ -121,16 +121,7 @@ export const createAnnouncement = asyncHandler(async (req, res) => {
     }
 
     if (isTeamLead) {
-      const leadsThisTeam =
-        Array.isArray(req.user.teams) &&
-        req.user.teams.some(
-          (t) =>
-            t.teamId === teamId &&
-            (t.position === TeamPositionEnum.LEAD ||
-              t.position === TeamPositionEnum.COLEAD),
-        );
-
-      if (!leadsThisTeam) {
+      if (!userLeadsTeam(req.user, teamId)) {
         throw new ApiError(
           403,
           ErrorCodeEnum.FORBIDDEN,

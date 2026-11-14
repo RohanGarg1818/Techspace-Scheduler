@@ -1,5 +1,5 @@
 import db from "../db/index.js";
-import { TeamPositionEnum } from "./constants.js";
+import { isLeadPosition } from "./userUtils.js";
 
 /**
  * Format a Team object for responses per specs:
@@ -26,10 +26,7 @@ export const formatTeamResponse = async (team, includeMembers = false) => {
           position: userTeam.position,
         });
 
-        if (
-          userTeam.position === TeamPositionEnum.LEAD ||
-          userTeam.position === TeamPositionEnum.COLEAD
-        ) {
+        if (isLeadPosition(userTeam.position)) {
           leads.push({
             id: user.id,
             name: user.name,

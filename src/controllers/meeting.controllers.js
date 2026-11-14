@@ -6,11 +6,11 @@ import {
   ErrorCodeEnum,
   UserRolesEnum,
   TeamTypeEnum,
-  TeamPositionEnum,
   MeetingTypeEnum,
   MeetingColorEnum,
   MeetingStatusEnum,
 } from "../utils/constants.js";
+import { userLeadsTeam } from "../utils/userUtils.js";
 import {
   isValidDateFormat,
   isValidTimeFormat,
@@ -223,16 +223,7 @@ export const createMeeting = asyncHandler(async (req, res) => {
       );
     }
 
-    const leadsThisTeam =
-      Array.isArray(req.user.teams) &&
-      req.user.teams.some(
-        (t) =>
-          t.teamId === teamId &&
-          (t.position === TeamPositionEnum.LEAD ||
-            t.position === TeamPositionEnum.COLEAD),
-      );
-
-    if (!leadsThisTeam) {
+    if (!userLeadsTeam(req.user, teamId)) {
       throw new ApiError(
         403,
         ErrorCodeEnum.FORBIDDEN,
@@ -393,16 +384,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
       }
 
       if (!isOB) {
-        const leadsThisTeam =
-          Array.isArray(req.user.teams) &&
-          req.user.teams.some(
-            (t) =>
-              t.teamId === teamId &&
-              (t.position === TeamPositionEnum.LEAD ||
-                t.position === TeamPositionEnum.COLEAD),
-          );
-
-        if (!leadsThisTeam) {
+        if (!userLeadsTeam(req.user, teamId)) {
           throw new ApiError(
             403,
             ErrorCodeEnum.FORBIDDEN,

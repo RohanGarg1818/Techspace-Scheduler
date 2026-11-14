@@ -8,6 +8,10 @@ import {
   TeamPositionEnum,
 } from "../utils/constants.js";
 import { formatTeamResponse } from "../utils/teamUtils.js";
+import {
+  isLeadPosition,
+  hasLeadOrColeadPosition,
+} from "../utils/userUtils.js";
 import db from "../db/index.js";
 
 /**
@@ -208,11 +212,7 @@ export const addOrUpdateTeamMember = asyncHandler(async (req, res) => {
   }
 
   // Rule: A team position of lead or colead is only allowed if role = "team_lead"
-  if (
-    (position === TeamPositionEnum.LEAD ||
-      position === TeamPositionEnum.COLEAD) &&
-    user.role !== UserRolesEnum.TEAM_LEAD
-  ) {
+  if (isLeadPosition(position) && user.role !== UserRolesEnum.TEAM_LEAD) {
     throw new ApiError(
       400,
       ErrorCodeEnum.VALIDATION_ERROR,
@@ -273,13 +273,8 @@ export const removeTeamMember = asyncHandler(async (req, res) => {
 
   // Rule: role = "team_lead" needs at least one team with position lead or colead
   const remainingTeams = user.teams.filter((t) => t.teamId !== id);
-  const hasLeadPosition = remainingTeams.some(
-    (t) =>
-      t.position === TeamPositionEnum.LEAD ||
-      t.position === TeamPositionEnum.COLEAD,
-  );
 
-  if (user.role === UserRolesEnum.TEAM_LEAD && !hasLeadPosition) {
+  if (user.role === UserRolesEnum.TEAM_LEAD && !hasLeadOrColeadPosition(remainingTeams)) {
     throw new ApiError(
       400,
       ErrorCodeEnum.VALIDATION_ERROR,

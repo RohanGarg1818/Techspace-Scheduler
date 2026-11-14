@@ -7,6 +7,32 @@ import {
 } from "./constants.js";
 
 /**
+ * Checks whether a position is a lead or co-lead position.
+ * @param {string} position
+ * @returns {boolean}
+ */
+export const isLeadPosition = (position) =>
+  position === TeamPositionEnum.LEAD || position === TeamPositionEnum.COLEAD;
+
+/**
+ * Checks whether a teams array has at least one lead or colead position.
+ * @param {Array} teams
+ * @returns {boolean}
+ */
+export const hasLeadOrColeadPosition = (teams) =>
+  Array.isArray(teams) && teams.some((t) => isLeadPosition(t.position));
+
+/**
+ * Checks whether a user leads or co-leads a specific team.
+ * @param {object} user - User object with teams array.
+ * @param {string} teamId - Target team ID.
+ * @returns {boolean}
+ */
+export const userLeadsTeam = (user, teamId) =>
+  Array.isArray(user?.teams) &&
+  user.teams.some((t) => t.teamId === teamId && isLeadPosition(t.position));
+
+/**
  * Format a user object for API responses:
  * - Omits password and deletedAt
  * - Expands teams with teamId, teamName, position
@@ -46,13 +72,7 @@ export const formatUserResponse = async (user) => {
 export const validateUserCrossFieldRules = async (role, obTitle, teams = []) => {
   const details = [];
 
-  const hasLeadOrColead =
-    Array.isArray(teams) &&
-    teams.some(
-      (t) =>
-        t.position === TeamPositionEnum.LEAD ||
-        t.position === TeamPositionEnum.COLEAD,
-    );
+  const hasLeadOrColead = hasLeadOrColeadPosition(teams);
 
   // 1. role = "team_lead" needs at least one team with position lead or colead.
   if (role === UserRolesEnum.TEAM_LEAD && !hasLeadOrColead) {
