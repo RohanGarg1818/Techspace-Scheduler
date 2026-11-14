@@ -49,6 +49,8 @@ class Database {
       return null;
     }
     user.deletedAt = new Date().toISOString();
+    user.teams = [];
+    this.userTeams.delete(id);
     return user;
   }
 

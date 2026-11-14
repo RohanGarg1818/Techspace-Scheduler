@@ -1,7 +1,40 @@
-import { body, validationResult } from "express-validator";
-import { AvailableUserRoles, ErrorCodeEnum } from "../utils/constants.js";
+import { body, query, param } from "express-validator";
+import {
+  AvailableUserRoles,
+  AvailableTeamPositions,
+} from "../utils/constants.js";
 
-const userRegisterValidator = () => {
+export const userLoginValidator = () => {
+  return [
+    body("email")
+      .trim()
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Invalid email address"),
+    body("password")
+      .trim()
+      .notEmpty()
+      .withMessage("Password is required"),
+  ];
+};
+
+export const userChangeCurrentPasswordValidator = () => {
+  return [
+    body("currentPassword")
+      .trim()
+      .notEmpty()
+      .withMessage("Current password is required"),
+    body("newPassword")
+      .trim()
+      .notEmpty()
+      .withMessage("New password is required")
+      .isLength({ min: 8, max: 100 })
+      .withMessage("New password must be at least 8 characters"),
+  ];
+};
+
+export const createUserValidator = () => {
   return [
     body("name")
       .trim()
@@ -22,7 +55,9 @@ const userRegisterValidator = () => {
       .isLength({ min: 8, max: 100 })
       .withMessage("Password must be at least 8 characters"),
     body("role")
-      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage("Role is required")
       .isIn(AvailableUserRoles)
       .withMessage(`Role must be one of: ${AvailableUserRoles.join(", ")}`),
     body("obTitle")
@@ -31,66 +66,96 @@ const userRegisterValidator = () => {
     body("teams")
       .optional()
       .isArray()
-      .withMessage("Teams must be an array"),
+      .withMessage("teams must be an array"),
+    body("teams.*.teamId")
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage("teamId is required"),
+    body("teams.*.position")
+      .optional()
+      .trim()
+      .isIn(AvailableTeamPositions)
+      .withMessage(
+        `Position must be one of: ${AvailableTeamPositions.join(", ")}`,
+      ),
   ];
 };
 
-const userLoginValidator = () => {
+export const updateUserValidator = () => {
   return [
-    body("email")
+    body("name")
+      .optional()
       .trim()
       .notEmpty()
-      .withMessage("Email is required")
+      .withMessage("Name cannot be empty")
+      .isLength({ min: 1, max: 100 })
+      .withMessage("Name must be between 1 and 100 characters"),
+    body("email")
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage("Email cannot be empty")
       .isEmail()
       .withMessage("Invalid email address"),
     body("password")
+      .optional()
       .trim()
       .notEmpty()
-      .withMessage("Password is required"),
-  ];
-};
-
-const userChangeCurrentPasswordValidator = () => {
-  return [
-    body("currentPassword")
-      .trim()
-      .notEmpty()
-      .withMessage("Current password is required"),
-    body("newPassword")
-      .trim()
-      .notEmpty()
-      .withMessage("New password is required")
+      .withMessage("Password cannot be empty")
       .isLength({ min: 8, max: 100 })
-      .withMessage("New password must be at least 8 characters"),
-  ];
-};
-
-const userForgotPasswordValidator = () => {
-  return [
-    body("email")
+      .withMessage("Password must be at least 8 characters"),
+    body("role")
+      .optional()
       .trim()
       .notEmpty()
-      .withMessage("Email is required")
-      .isEmail()
-      .withMessage("Invalid email address"),
-  ];
-};
-
-const userResetPasswordValidator = () => {
-  return [
-    body("newPassword")
+      .withMessage("Role cannot be empty")
+      .isIn(AvailableUserRoles)
+      .withMessage(`Role must be one of: ${AvailableUserRoles.join(", ")}`),
+    body("obTitle")
+      .optional({ nullable: true })
+      .trim(),
+    body("teams")
+      .optional()
+      .isArray()
+      .withMessage("teams must be an array"),
+    body("teams.*.teamId")
+      .optional()
       .trim()
       .notEmpty()
-      .withMessage("New password is required")
-      .isLength({ min: 8, max: 100 })
-      .withMessage("New password must be between 8 and 100 characters"),
+      .withMessage("teamId is required"),
+    body("teams.*.position")
+      .optional()
+      .trim()
+      .isIn(AvailableTeamPositions)
+      .withMessage(
+        `Position must be one of: ${AvailableTeamPositions.join(", ")}`,
+      ),
   ];
 };
 
-export {
-  userRegisterValidator,
-  userLoginValidator,
-  userChangeCurrentPasswordValidator,
-  userForgotPasswordValidator,
-  userResetPasswordValidator,
+export const getUsersQueryValidator = () => {
+  return [
+    query("role")
+      .optional()
+      .isIn(AvailableUserRoles)
+      .withMessage(`Role must be one of: ${AvailableUserRoles.join(", ")}`),
+    query("page")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage("Page must be a positive integer"),
+    query("limit")
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage("Limit must be between 1 and 100"),
+  ];
+};
+
+export const userParamValidator = (paramName = "id") => {
+  return [
+    param(paramName)
+      .trim()
+      .notEmpty()
+      .withMessage(`${paramName} is required`),
+  ];
 };
