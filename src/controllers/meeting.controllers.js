@@ -97,7 +97,6 @@ export const getMeetings = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        meetings,
         items: meetings,
       },
       "Meetings fetched successfully",
@@ -263,7 +262,7 @@ export const createMeeting = asyncHandler(async (req, res) => {
         409,
         ErrorCodeEnum.MEETING_CLASH,
         `This overlaps with ${clashes.length} meeting${clashes.length > 1 ? "s" : ""}`,
-        { data: { clashes } },
+        { clashes },
       );
     }
   }
@@ -418,7 +417,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
         409,
         ErrorCodeEnum.MEETING_CLASH,
         `This overlaps with ${clashes.length} meeting${clashes.length > 1 ? "s" : ""}`,
-        { data: { clashes } },
+        { clashes },
       );
     }
   }

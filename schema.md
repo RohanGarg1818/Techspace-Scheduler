@@ -57,35 +57,7 @@ Every response except `204` is wrapped like this:
 What goes in `data`:
 
 - Single resource (a User, a Meeting, ...): `data` is the object itself.
-- Lists with paging (users, announcements, comments): `data` is `{ "items": [ ... ], "pagination": { "page", "limit", "total" } }`.
-- Lists without paging (teams, meetings): `data` is `{ "items": [ ... ] }`.
-- `204`: no body at all (deletes, change-password).
-
-### Response format
-
-Every response except `204` is wrapped like this:
-
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "message": "Success",
-  "data": {}
-}
-```
-
-| field | notes |
-|---|---|
-| success | `true` for status below 400, otherwise `false` |
-| statusCode | same number as the HTTP status |
-| message | `"Success"` by default, a short human-readable text on errors |
-| data | the actual payload (see below) |
-
-**Important: every "Output" example in this document shows only what goes inside `data`.** The server adds `success`, `statusCode` and `message` around it. Error examples are the exception and show the full body.
-
-What goes in `data`:
-- Single resource (a User, a Meeting, ...): `data` is the object itself.
-- Lists with paging (users, announcements, comments): `data` is `{ "items": [ ... ], "pagination": { "page", "limit", "total" } }`.
+- Lists with paging (users, announcements, comments): `data` is `{ "items": [ ... ], "pagination": { "page", "limit", "total", "totalPages", "hasNextPage", "hasPreviousPage" } }`.
 - Lists without paging (teams, meetings): `data` is `{ "items": [ ... ] }`.
 - `204`: no body at all (deletes, change-password).
 
@@ -105,7 +77,6 @@ What goes in `data`:
 - `error.details` is `null`, except for `VALIDATION_ERROR` where it is a list of `{ "field", "issue" }`.
 - `data` is `null` on errors, except `MEETING_CLASH` where it is `{ "clashes": [ ... ] }`.
 
-<<<<<<< HEAD
 | HTTP | code               | when                                    |
 | ---- | ------------------ | --------------------------------------- |
 | 400  | `VALIDATION_ERROR` | bad/missing field                       |
@@ -114,16 +85,6 @@ What goes in `data`:
 | 404  | `NOT_FOUND`        | id doesn't exist                        |
 | 409  | `MEETING_CLASH`    | meeting overlaps another (see Meetings) |
 | 409  | `CONFLICT`         | duplicate email, etc.                   |
-=======
-| HTTP | code | when |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | bad/missing field |
-| 401 | `UNAUTHENTICATED` | no token / wrong login |
-| 403 | `FORBIDDEN` | role not allowed |
-| 404 | `NOT_FOUND` | id doesn't exist |
-| 409 | `MEETING_CLASH` | meeting overlaps another (see Meetings) |
-| 409 | `CONFLICT` | duplicate email, etc. |
->>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
 
 ---
 
@@ -289,7 +250,7 @@ Output `200`:
       "teams": [{ "teamId": "t1", "teamName": "Tech Team", "position": "lead" }]
     }
   ],
-  "pagination": { "page": 1, "limit": 20, "total": 1 }
+  "pagination": { "page": 1, "limit": 20, "total": 1, "totalPages": 1, "hasNextPage": false, "hasPreviousPage": false }
 }
 ```
 
@@ -889,7 +850,7 @@ Output `200`:
       "updatedAt": null
     }
   ],
-  "pagination": { "page": 1, "limit": 20, "total": 1 }
+  "pagination": { "page": 1, "limit": 20, "total": 1, "totalPages": 1, "hasNextPage": false, "hasPreviousPage": false }
 }
 ```
 
@@ -1067,7 +1028,7 @@ Output `200`:
       "updatedAt": null
     }
   ],
-  "pagination": { "page": 1, "limit": 20, "total": 2 }
+  "pagination": { "page": 1, "limit": 20, "total": 2, "totalPages": 1, "hasNextPage": false, "hasPreviousPage": false }
 }
 ```
 

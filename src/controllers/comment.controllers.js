@@ -46,12 +46,11 @@ export const getAnnouncementComments = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        comments: items,
         items,
         pagination: {
-          currentPage: parsedPage,
+          page: parsedPage,
           limit: parsedLimit,
-          totalComments: total,
+          total,
           totalPages,
           hasNextPage: parsedPage < totalPages,
           hasPreviousPage: parsedPage > 1,
@@ -157,12 +156,11 @@ export const getMeetingComments = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        comments: items,
         items,
         pagination: {
-          currentPage: parsedPage,
+          page: parsedPage,
           limit: parsedLimit,
-          totalComments: total,
+          total,
           totalPages,
           hasNextPage: parsedPage < totalPages,
           hasPreviousPage: parsedPage > 1,

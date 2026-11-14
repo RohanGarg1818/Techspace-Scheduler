@@ -58,12 +58,11 @@ export const getAnnouncements = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        announcements: items,
         items,
         pagination: {
-          currentPage: parsedPage,
+          page: parsedPage,
           limit: parsedLimit,
-          totalAnnouncements: total,
+          total,
           totalPages,
           hasNextPage: parsedPage < totalPages,
           hasPreviousPage: parsedPage > 1,

@@ -53,12 +53,11 @@ export const getUsers = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        users: items,
         items,
         pagination: {
-          currentPage: parsedPage,
+          page: parsedPage,
           limit: parsedLimit,
-          totalUsers,
+          total: totalUsers,
           totalPages,
           hasNextPage: parsedPage < totalPages,
           hasPreviousPage: parsedPage > 1,

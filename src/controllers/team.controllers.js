@@ -33,7 +33,6 @@ export const getTeams = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        teams: items,
         items,
       },
       "Teams fetched successfully",
