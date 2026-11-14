@@ -3,6 +3,12 @@ import express from "express";
 import cors from "cors";
 import healthCheckRouter from "./routes/healthcheck.routes.js";
 import authRouter from "./routes/auth.routes.js";
+import userRouter from "./routes/user.routes.js";
+import teamRouter from "./routes/team.routes.js";
+import dashboardRouter from "./routes/dashboard.routes.js";
+import meetingRouter from "./routes/meeting.routes.js";
+import announcementRouter from "./routes/announcement.routes.js";
+import commentRouter from "./routes/comment.routes.js";
 
 const app = express();
 
@@ -27,6 +33,12 @@ app.get("/", (req, res) => {
 });
 app.use("/api/v1/healthcheck", healthCheckRouter);
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/teams", teamRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
+app.use("/api/v1/meetings", meetingRouter);
+app.use("/api/v1/announcements", announcementRouter);
+app.use("/api/v1/comments", commentRouter);
 
 // Global Error-Handling Middleware
 app.use((err, req, res, _next) => {
