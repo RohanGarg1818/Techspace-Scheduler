@@ -1,5 +1,7 @@
 # Techspace Meeting Calendar
+
 this shi is ai generated but i designed the specs and schemas so they are good to go
+
 ## 0. Basics
 
 - Base URL: `/api/v1`
@@ -11,31 +13,108 @@ this shi is ai generated but i designed the specs and schemas so they are good t
 
 ### Roles (user.role)
 
-| role | who |
-|---|---|
-| `ob` | Office Bearers (admins) |
-| `faculty` | Faculty coordinators (view only) |
-| `executive` | Executives (view only) |
+| role        | who                                       |
+| ----------- | ----------------------------------------- |
+| `ob`        | Office Bearers (admins)                   |
+| `faculty`   | Faculty coordinators (view only)          |
+| `executive` | Executives (view only)                    |
 | `team_lead` | Lead / co-lead of a core team or sub-club |
-| `member` | Everyone else (view only) |
+| `member`    | Everyone else (view only)                 |
 
 ### Who can do what
 
-| Action | ob | faculty | executive | team_lead | member |
-|---|---|---|---|---|---|
-| View calendar, teams, dashboard | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Create meeting | ✅ | ❌ | ❌ | ✅ (only for their own team) | ❌ |
-| Edit / cancel meeting | ✅ any | ❌ | ❌ | ✅ only ones they created | ❌ |
-| Delete meeting for good | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Create / edit / delete users, manage teams | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Change own password | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Action                                     | ob     | faculty | executive | team_lead                    | member |
+| ------------------------------------------ | ------ | ------- | --------- | ---------------------------- | ------ |
+| View calendar, teams, dashboard            | ✅     | ✅      | ✅        | ✅                           | ✅     |
+| Create meeting                             | ✅     | ❌      | ❌        | ✅ (only for their own team) | ❌     |
+| Edit / cancel meeting                      | ✅ any | ❌      | ❌        | ✅ only ones they created    | ❌     |
+| Delete meeting for good                    | ✅     | ❌      | ❌        | ❌                           | ❌     |
+| Create / edit / delete users, manage teams | ✅     | ❌      | ❌        | ❌                           | ❌     |
+| Change own password                        | ✅     | ✅      | ✅        | ✅                           | ✅     |
+
+### Response format
+
+Every response except `204` is wrapped like this:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Success",
+  "data": {}
+}
+```
+
+| field      | notes                                                         |
+| ---------- | ------------------------------------------------------------- |
+| success    | `true` for status below 400, otherwise `false`                |
+| statusCode | same number as the HTTP status                                |
+| message    | `"Success"` by default, a short human-readable text on errors |
+| data       | the actual payload (see below)                                |
+
+**Important: every "Output" example in this document shows only what goes inside `data`.** The server adds `success`, `statusCode` and `message` around it. Error examples are the exception and show the full body.
+
+What goes in `data`:
+
+- Single resource (a User, a Meeting, ...): `data` is the object itself.
+- Lists with paging (users, announcements, comments): `data` is `{ "items": [ ... ], "pagination": { "page", "limit", "total" } }`.
+- Lists without paging (teams, meetings): `data` is `{ "items": [ ... ] }`.
+- `204`: no body at all (deletes, change-password).
+
+### Response format
+
+Every response except `204` is wrapped like this:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Success",
+  "data": {}
+}
+```
+
+| field | notes |
+|---|---|
+| success | `true` for status below 400, otherwise `false` |
+| statusCode | same number as the HTTP status |
+| message | `"Success"` by default, a short human-readable text on errors |
+| data | the actual payload (see below) |
+
+**Important: every "Output" example in this document shows only what goes inside `data`.** The server adds `success`, `statusCode` and `message` around it. Error examples are the exception and show the full body.
+
+What goes in `data`:
+- Single resource (a User, a Meeting, ...): `data` is the object itself.
+- Lists with paging (users, announcements, comments): `data` is `{ "items": [ ... ], "pagination": { "page", "limit", "total" } }`.
+- Lists without paging (teams, meetings): `data` is `{ "items": [ ... ] }`.
+- `204`: no body at all (deletes, change-password).
 
 ### Errors (same shape everywhere)
 
 ```json
-{ "error": { "code": "FORBIDDEN", "message": "Only OBs can do this" } }
+{
+  "success": false,
+  "statusCode": 403,
+  "message": "Only OBs can do this",
+  "error": { "code": "FORBIDDEN", "details": null },
+  "data": null
+}
 ```
 
+- `error.code` is one of the codes in the table below.
+- `error.details` is `null`, except for `VALIDATION_ERROR` where it is a list of `{ "field", "issue" }`.
+- `data` is `null` on errors, except `MEETING_CLASH` where it is `{ "clashes": [ ... ] }`.
+
+<<<<<<< HEAD
+| HTTP | code               | when                                    |
+| ---- | ------------------ | --------------------------------------- |
+| 400  | `VALIDATION_ERROR` | bad/missing field                       |
+| 401  | `UNAUTHENTICATED`  | no token / wrong login                  |
+| 403  | `FORBIDDEN`        | role not allowed                        |
+| 404  | `NOT_FOUND`        | id doesn't exist                        |
+| 409  | `MEETING_CLASH`    | meeting overlaps another (see Meetings) |
+| 409  | `CONFLICT`         | duplicate email, etc.                   |
+=======
 | HTTP | code | when |
 |---|---|---|
 | 400 | `VALIDATION_ERROR` | bad/missing field |
@@ -44,6 +123,7 @@ this shi is ai generated but i designed the specs and schemas so they are good t
 | 404 | `NOT_FOUND` | id doesn't exist |
 | 409 | `MEETING_CLASH` | meeting overlaps another (see Meetings) |
 | 409 | `CONFLICT` | duplicate email, etc. |
+>>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
 
 ---
 
@@ -51,14 +131,14 @@ this shi is ai generated but i designed the specs and schemas so they are good t
 
 ### User
 
-| field | type | notes |
-|---|---|---|
-| id | string | |
-| name | string | |
-| email | string | unique |
-| role | string | one of the roles above |
-| obTitle | string or null | e.g. "President". Only for OBs |
-| teams | array | list of `{ teamId, teamName, position }`, position is `"lead"`, `"colead"` or `"member"` |
+| field   | type           | notes                                                                                    |
+| ------- | -------------- | ---------------------------------------------------------------------------------------- |
+| id      | string         |                                                                                          |
+| name    | string         |                                                                                          |
+| email   | string         | unique                                                                                   |
+| role    | string         | one of the roles above                                                                   |
+| obTitle | string or null | e.g. "President". Only for OBs                                                           |
+| teams   | array          | list of `{ teamId, teamName, position }`, position is `"lead"`, `"colead"` or `"member"` |
 
 ```json
 {
@@ -67,22 +147,20 @@ this shi is ai generated but i designed the specs and schemas so they are good t
   "email": "priyanshu@boom.com",
   "role": "team_lead",
   "obTitle": null,
-  "teams": [
-    { "teamId": "t1", "teamName": "Tech Team", "position": "lead" }
-  ]
+  "teams": [{ "teamId": "t1", "teamName": "Tech Team", "position": "lead" }]
 }
 ```
 
 ### Team (core teams and sub-clubs)
 
-| field | type | notes |
-|---|---|---|
-| id | string | |
-| name | string | |
-| type | string | `"core"` or `"subclub"` |
-| description | string or null | |
-| leads | array | leads and co-leads, each `{ id, name }` |
-| memberCount | number | |
+| field       | type           | notes                                   |
+| ----------- | -------------- | --------------------------------------- |
+| id          | string         |                                         |
+| name        | string         |                                         |
+| type        | string         | `"core"` or `"subclub"`                 |
+| description | string or null |                                         |
+| leads       | array          | leads and co-leads, each `{ id, name }` |
+| memberCount | number         |                                         |
 
 ```json
 {
@@ -97,21 +175,21 @@ this shi is ai generated but i designed the specs and schemas so they are good t
 
 ### Meeting
 
-| field | type | notes |
-|---|---|---|
-| id | string | |
-| type | string | `"ob"`, `"core"` or `"subclub"`. **Set by server**, don't send it |
-| color | string | **Set by server**. ob = `#1E3A8A` (dark blue), core = `#0D9488` (teal), subclub = `#7C3AED` (purple) |
-| team | object or null | `{ id, name }`. `null` for OB meetings |
-| topic | string | e.g. "Website Planning" |
-| date | string | `2026-11-20` |
-| startTime | string | `15:00` |
-| endTime | string | `16:00` (must be after startTime) |
-| note | string or null | optional short note |
-| location | string or null | optional, room name |
-| link | string or null | optional, meet/zoom link |
-| createdBy | object | `{ id, name }`. **Set by server** from the token |
-| status | string | `"scheduled"` or `"cancelled"` |
+| field     | type           | notes                                                                                                |
+| --------- | -------------- | ---------------------------------------------------------------------------------------------------- |
+| id        | string         |                                                                                                      |
+| type      | string         | `"ob"`, `"core"` or `"subclub"`. **Set by server**, don't send it                                    |
+| color     | string         | **Set by server**. ob = `#1E3A8A` (dark blue), core = `#0D9488` (teal), subclub = `#7C3AED` (purple) |
+| team      | object or null | `{ id, name }`. `null` for OB meetings                                                               |
+| topic     | string         | e.g. "Website Planning"                                                                              |
+| date      | string         | `2026-11-20`                                                                                         |
+| startTime | string         | `15:00`                                                                                              |
+| endTime   | string         | `16:00` (must be after startTime)                                                                    |
+| note      | string or null | optional short note                                                                                  |
+| location  | string or null | optional, room name                                                                                  |
+| link      | string or null | optional, meet/zoom link                                                                             |
+| createdBy | object         | `{ id, name }`. **Set by server** from the token                                                     |
+| status    | string         | `"scheduled"` or `"cancelled"`                                                                       |
 
 ```json
 {
@@ -138,11 +216,13 @@ this shi is ai generated but i designed the specs and schemas so they are good t
 ### POST `/auth/login` (public)
 
 Input:
+
 ```json
 { "email": "priyanshu@boom.com", "password": "boom123" }
 ```
 
 Output `200`:
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIs...",
@@ -156,6 +236,7 @@ Output `200`:
   }
 }
 ```
+
 Errors: `400` missing fields, `401` wrong email/password.
 
 ### GET `/auth/me`
@@ -172,16 +253,17 @@ Only OBs create, edit and delete users (there is no public signup). Everyone can
 
 ### Rules for user fields (used by create and update)
 
-| field | rules |
-|---|---|
-| name | required on create, 1 to 100 chars, trimmed |
-| email | required on create, valid email, saved in lowercase, must be unique |
-| password | required on create, min 8 chars. Server stores a hash only, never returns it |
-| role | required on create, one of `ob`, `faculty`, `executive`, `team_lead`, `member` |
-| obTitle | only for `role = "ob"` (e.g. "President", "boomary"). Must be `null`/omitted for other roles |
-| teams | optional array of `{ "teamId": "t1", "position": "lead" }`. `position` is `lead`, `colead` or `member` |
+| field    | rules                                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------ |
+| name     | required on create, 1 to 100 chars, trimmed                                                            |
+| email    | required on create, valid email, saved in lowercase, must be unique                                    |
+| password | required on create, min 8 chars. Server stores a hash only, never returns it                           |
+| role     | required on create, one of `ob`, `faculty`, `executive`, `team_lead`, `member`                         |
+| obTitle  | only for `role = "ob"` (e.g. "President", "boomary"). Must be `null`/omitted for other roles           |
+| teams    | optional array of `{ "teamId": "t1", "position": "lead" }`. `position` is `lead`, `colead` or `member` |
 
 Cross-field rules (return `400 VALIDATION_ERROR` if broken):
+
 1. `role = "team_lead"` needs at least one team with position `lead` or `colead`.
 2. A team with position `lead` or `colead` is only allowed if `role = "team_lead"`.
 3. `obTitle` is only allowed when `role = "ob"`.
@@ -194,9 +276,10 @@ Query params (all optional): `role=team_lead`, `teamId=t1`, `q=riya` (search by 
 boom: `GET /users?role=team_lead&page=1&limit=20`
 
 Output `200`:
+
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "u1",
       "name": "Priyanshu Yadav",
@@ -209,6 +292,7 @@ Output `200`:
   "pagination": { "page": 1, "limit": 20, "total": 1 }
 }
 ```
+
 Deleted users never show up here.
 
 ### GET `/users/:id`
@@ -221,19 +305,19 @@ Errors: `404` if not found (or deleted).
 ### POST `/users` (ob only): create
 
 Input (a team lead):
+
 ```json
 {
   "name": "Priyanshu Yadav",
   "email": "Priyanshu@boom.com",
   "password": "boom123",
   "role": "team_lead",
-  "teams": [
-    { "teamId": "t1", "position": "lead" }
-  ]
+  "teams": [{ "teamId": "t1", "position": "lead" }]
 }
 ```
 
 Input (an OB):
+
 ```json
 {
   "name": "Aman Verma",
@@ -245,6 +329,7 @@ Input (an OB):
 ```
 
 Input (a plain member, minimum fields):
+
 ```json
 {
   "name": "Riya Sharma",
@@ -255,6 +340,7 @@ Input (a plain member, minimum fields):
 ```
 
 Output `201` (password is never in the response, email is lowercased):
+
 ```json
 {
   "id": "u1",
@@ -267,24 +353,40 @@ Output `201` (password is never in the response, email is lowercased):
 ```
 
 Errors:
+
 - `400 VALIDATION_ERROR`: missing field, bad email, short password, bad role, or a cross-field rule broken
+
 ```json
 {
+  "success": false,
+  "statusCode": 400,
+  "message": "Invalid input",
   "error": {
     "code": "VALIDATION_ERROR",
-    "message": "Invalid input",
     "details": [
       { "field": "password", "issue": "Must be at least 8 characters" },
-      { "field": "teams", "issue": "role team_lead needs at least one lead/colead team" }
+      {
+        "field": "teams",
+        "issue": "role team_lead needs at least one lead/colead team"
+      }
     ]
-  }
+  },
+  "data": null
 }
 ```
+
 - `403 FORBIDDEN`: caller is not an OB
 - `404 NOT_FOUND`: a `teamId` doesn't exist
 - `409 CONFLICT`: email already used
+
 ```json
-{ "error": { "code": "CONFLICT", "message": "Email already in use" } }
+{
+  "success": false,
+  "statusCode": 409,
+  "message": "Email already in use",
+  "error": { "code": "CONFLICT", "details": null },
+  "data": null
+}
 ```
 
 ### PATCH `/users/:id` (ob only): update
@@ -292,16 +394,19 @@ Errors:
 Send **only the fields you want to change**. At least one field is required. Allowed fields: `name`, `email`, `password`, `role`, `obTitle`, `teams`.
 
 boom 1: change role to executive
+
 ```json
 { "role": "executive" }
 ```
 
 boom 2: reset someone's password (OB sets a new one)
+
 ```json
 { "password": "newboom456" }
 ```
 
 boom 3: make someone a co-lead of Design Club
+
 ```json
 {
   "role": "team_lead",
@@ -312,6 +417,7 @@ boom 3: make someone a co-lead of Design Club
 Important: `teams`, if sent, **replaces the whole list** of that user's teams (it does not add). To keep existing teams, include them again in the array. To remove the user from all teams, send `"teams": []`.
 
 Output `200`: the updated **User**.
+
 ```json
 {
   "id": "u1",
@@ -324,6 +430,7 @@ Output `200`: the updated **User**.
 ```
 
 Rules and side effects:
+
 - Same cross-field rules as create are checked on the **final result** (existing values + your changes). boom: changing `role` from `team_lead` to `member` while they are still lead of a team fails with `400`, unless you also send `"teams": []` (or a list without lead/colead).
 - Changing `role` away from `ob` clears `obTitle` automatically.
 - Changing `email` to one already used returns `409 CONFLICT`.
@@ -335,9 +442,11 @@ Errors: `400`, `403`, `404` (user or teamId), `409`.
 ### POST `/auth/change-password` (any logged-in user, for themselves)
 
 Input:
+
 ```json
 { "currentPassword": "boom123", "newPassword": "newboom456" }
 ```
+
 Output `204` (empty).
 Errors: `400` (new password under 8 chars), `401` (current password wrong).
 
@@ -346,16 +455,26 @@ Errors: `400` (new password under 8 chars), `401` (current password wrong).
 No input. Output `204` (empty).
 
 How delete works: it is a **soft delete**. Set a `deletedAt` timestamp on the user instead of removing the row.
+
 - The user can no longer log in, and is hidden from `/users`, team member lists and the dashboard.
 - Their old meetings stay on the calendar and still show `createdBy` with their name. (A hard delete would break those meetings.)
+- Their comments and announcements also stay and still show their name.
 - They are removed from all teams.
 
 Errors:
+
 - `403 FORBIDDEN`: caller is not an OB
 - `404 NOT_FOUND`: user doesn't exist or is already deleted
 - `409 CONFLICT`: you cannot delete yourself, and you cannot delete the last remaining OB
+
 ```json
-{ "error": { "code": "CONFLICT", "message": "You cannot delete the last OB" } }
+{
+  "success": false,
+  "statusCode": 409,
+  "message": "You cannot delete the last OB",
+  "error": { "code": "CONFLICT", "details": null },
+  "data": null
+}
 ```
 
 ---
@@ -369,9 +488,10 @@ Query param (optional): `type=core` or `type=subclub`
 boom: `GET /teams?type=core`
 
 Output `200`:
+
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "t1",
       "name": "Tech Team",
@@ -389,6 +509,7 @@ Output `200`:
 Same as a Team, plus the member list.
 
 Output `200`:
+
 ```json
 {
   "id": "t1",
@@ -407,9 +528,15 @@ Output `200`:
 ### POST `/teams` (ob only)
 
 Input:
+
 ```json
-{ "name": "Design Club", "type": "subclub", "description": "UI/UX and graphics" }
+{
+  "name": "Design Club",
+  "type": "subclub",
+  "description": "UI/UX and graphics"
+}
 ```
+
 Required: `name`, `type`.
 
 Output `201`: the new **Team**.
@@ -417,9 +544,11 @@ Output `201`: the new **Team**.
 ### PATCH `/teams/:id` (ob only)
 
 Input (only what changes):
+
 ```json
 { "description": "UI/UX, graphics and branding" }
 ```
+
 Output `200`: updated **Team**.
 
 ### DELETE `/teams/:id` (ob only)
@@ -431,9 +560,11 @@ Output `204`. Returns `409 CONFLICT` if the team still has upcoming scheduled me
 Add a person to a team, or change their position.
 
 Input:
+
 ```json
 { "position": "lead" }
 ```
+
 `position` is `"lead"`, `"colead"` or `"member"`.
 
 Output `200`: the updated team (with `members`).
@@ -451,6 +582,7 @@ Output `204`.
 No input. Gives everything the dashboard page needs in one call.
 
 Output `200`:
+
 ```json
 {
   "counts": {
@@ -462,9 +594,7 @@ Output `200`:
   "officeBearers": [
     { "id": "u9", "name": "Aman Verma", "obTitle": "President" }
   ],
-  "executives": [
-    { "id": "u5", "name": "Neha Singh" }
-  ],
+  "executives": [{ "id": "u5", "name": "Neha Singh" }],
   "coreTeams": [
     {
       "id": "t1",
@@ -488,13 +618,14 @@ Output `200`:
 
 ---
 
-## 6. Meetings 
+## 6. Meetings
 
 ### GET `/meetings`
 
 Get meetings in a date range. Use a month range for month view, a 7-day range for week view, a single day for day view.
 
 Query params:
+
 - `from` (required): `2026-11-01`
 - `to` (required): `2026-11-30` (max 62 days apart)
 - `type` (optional): `ob`, `core` or `subclub`
@@ -503,9 +634,10 @@ Query params:
 boom: `GET /meetings?from=2026-11-01&to=2026-11-30`
 
 Output `200`:
+
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "m1",
       "type": "core",
@@ -524,6 +656,7 @@ Output `200`:
   ]
 }
 ```
+
 Cancelled meetings are hidden unless you add `status=cancelled`.
 
 ### GET `/meetings/:id`
@@ -537,6 +670,7 @@ Output `200`: one **Meeting**. `404` if not found.
 Use this while the user is filling the form, to show a live "this clashes" warning. It does not save anything.
 
 Input:
+
 ```json
 {
   "date": "2026-11-20",
@@ -545,14 +679,17 @@ Input:
   "excludeMeetingId": null
 }
 ```
+
 (`excludeMeetingId` is only for editing: pass the meeting's own id so it doesn't clash with itself.)
 
 Output `200` (no clash):
+
 ```json
 { "hasClash": false, "clashes": [] }
 ```
 
 Output `200` (clash):
+
 ```json
 {
   "hasClash": true,
@@ -581,6 +718,7 @@ Output `200` (clash):
 Create a meeting.
 
 Input (team lead):
+
 ```json
 {
   "teamId": "t1",
@@ -595,6 +733,7 @@ Input (team lead):
 ```
 
 Required: `topic`, `date`, `startTime`, `endTime`.
+
 - `teamId`: required for team leads (must be a team they lead). OBs leave it out (or `null`) to make an OB meeting.
 - `note`, `location`, `link`: optional.
 
@@ -603,33 +742,41 @@ Output `201`: the new **Meeting** (with `type`, `color`, `createdBy` filled in b
 **Clash handling:** if the time overlaps any existing scheduled meeting on that date, the server does NOT save it and returns:
 
 Output `409`:
+
 ```json
 {
-  "error": { "code": "MEETING_CLASH", "message": "This overlaps with 1 meeting" },
-  "clashes": [
-    {
-      "id": "m7",
-      "type": "ob",
-      "color": "#1E3A8A",
-      "team": null,
-      "topic": "Monthly OB Sync",
-      "date": "2026-11-20",
-      "startTime": "15:30",
-      "endTime": "16:30",
-      "note": null,
-      "location": null,
-      "link": null,
-      "createdBy": { "id": "u9", "name": "Aman Verma" },
-      "status": "scheduled"
-    }
-  ]
+  "success": false,
+  "statusCode": 409,
+  "message": "This overlaps with 1 meeting",
+  "error": { "code": "MEETING_CLASH", "details": null },
+  "data": {
+    "clashes": [
+      {
+        "id": "m7",
+        "type": "ob",
+        "color": "#1E3A8A",
+        "team": null,
+        "topic": "Monthly OB Sync",
+        "date": "2026-11-20",
+        "startTime": "15:30",
+        "endTime": "16:30",
+        "note": null,
+        "location": null,
+        "link": null,
+        "createdBy": { "id": "u9", "name": "Aman Verma" },
+        "status": "scheduled"
+      }
+    ]
+  }
 }
 ```
+
 The frontend shows the warning. If the user says "create anyway", send the **same body** again to `POST /meetings?acknowledgeClash=true` and it saves.
 
 Overlap rule (for the code): same date AND `newStart < existingEnd` AND `newEnd > existingStart` AND existing status is `scheduled`.
 
 Other errors:
+
 - `400` if `endTime` is not after `startTime`, or a field is missing/invalid.
 - `403` if a team lead uses a team they don't lead, or the user's role can't create meetings.
 
@@ -638,6 +785,7 @@ Other errors:
 Edit a meeting. Send only the fields that change. Same clash check and `?acknowledgeClash=true` flow as create.
 
 Input:
+
 ```json
 { "startTime": "16:00", "endTime": "17:00" }
 ```
@@ -649,14 +797,13 @@ Errors: `403` (not creator/ob), `404`, `409 MEETING_CLASH`, `409 CONFLICT` (meet
 
 No input.
 
-Output `200`: the **Meeting** with `"status": "cancelled"`. It stays in the database (soft cancel) so it can show as cancelled on the calendar.
+Output `200`: the **Meeting** with `"status": "cancelled"`. It stays in the database (soft cancel) so it can show as cancelled on the calendar. Its comments stay too.
 
 ### DELETE `/meetings/:id` (ob only)
 
-Permanently deletes. No input. Output `204`.
+Permanently deletes the meeting **and all comments on it**. No input. Output `204`.
 
 ---
-
 
 ## 7. Announcements
 
@@ -664,31 +811,31 @@ Official announcement board for society-wide notices and team-specific updates.
 
 ### Who can do what
 
-| Action | ob | faculty | executive | team_lead | member |
-|---|---|---|---|---|---|
-| View announcements | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Post society-wide announcement | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Post team announcement | ✅ (any team) | ❌ | ❌ | ✅ (only for their own team) | ❌ |
-| Edit announcement | ✅ any | ❌ | ❌ | ✅ only ones they created | ❌ |
-| Pin / Unpin announcement | ✅ any | ❌ | ❌ | ✅ only ones they created | ❌ |
-| Delete announcement | ✅ any | ❌ | ❌ | ✅ only ones they created | ❌ |
+| Action                         | ob            | faculty | executive | team_lead                    | member |
+| ------------------------------ | ------------- | ------- | --------- | ---------------------------- | ------ |
+| View announcements             | ✅            | ✅      | ✅        | ✅                           | ✅     |
+| Post society-wide announcement | ✅            | ❌      | ❌        | ❌                           | ❌     |
+| Post team announcement         | ✅ (any team) | ❌      | ❌        | ✅ (only for their own team) | ❌     |
+| Edit announcement              | ✅ any        | ❌      | ❌        | ✅ only ones they created    | ❌     |
+| Pin / Unpin announcement       | ✅ any        | ❌      | ❌        | ✅ only ones they created    | ❌     |
+| Delete announcement            | ✅ any        | ❌      | ❌        | ✅ only ones they created    | ❌     |
 
 ---
 
 ### Data shape: Announcement
 
-| field | type | notes |
-|---|---|---|
-| id | string | UUID |
-| type | string | `"society"` or `"team"`. **Set by server** depending on `teamId` |
-| team | object or null | `{ id, name }`. `null` for society-level announcements |
-| title | string | 1 to 150 characters, trimmed |
-| content | string | Full text / markdown body |
-| priority | string | `"normal"` or `"urgent"` (default `"normal"`) |
-| isPinned | boolean | If `true`, stays pinned to the top of the board (default `false`) |
-| createdBy | object | `{ id, name }`. **Set by server** from the token |
-| createdAt | string | ISO 8601 timestamp |
-| updatedAt | string or null | ISO 8601 timestamp, `null` until edited |
+| field     | type           | notes                                                             |
+| --------- | -------------- | ----------------------------------------------------------------- |
+| id        | string         | UUID                                                              |
+| type      | string         | `"society"` or `"team"`. **Set by server** depending on `teamId`  |
+| team      | object or null | `{ id, name }`. `null` for society-level announcements            |
+| title     | string         | 1 to 150 characters, trimmed                                      |
+| content   | string         | Full text / markdown body                                         |
+| priority  | string         | `"normal"` or `"urgent"` (default `"normal"`)                     |
+| isPinned  | boolean        | If `true`, stays pinned to the top of the board (default `false`) |
+| createdBy | object         | `{ id, name }`. **Set by server** from the token                  |
+| createdAt | string         | ISO 8601 timestamp                                                |
+| updatedAt | string or null | ISO 8601 timestamp, `null` until edited                           |
 
 ```json
 {
@@ -714,6 +861,7 @@ Official announcement board for society-wide notices and team-specific updates.
 Fetch announcements visible to the user. Society-wide announcements are visible to everyone; team announcements can be viewed by all or filtered per team.
 
 Query params (all optional):
+
 - `type`: `"society"` or `"team"`
 - `teamId`: filter by specific team (e.g. `teamId=t1`)
 - `isPinned`: `true` or `false`
@@ -724,9 +872,10 @@ Query params (all optional):
 boom: `GET /announcements?type=society&isPinned=true&page=1&limit=20`
 
 Output `200`:
+
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "a1",
       "type": "society",
@@ -744,7 +893,7 @@ Output `200`:
 }
 ```
 
-*Sorting order:* Pinned posts (`isPinned: true`) always appear first, sorted by `createdAt DESC`, followed by unpinned announcements sorted by `createdAt DESC`.
+_Sorting order:_ Pinned posts (`isPinned: true`) always appear first, sorted by `createdAt DESC`, followed by unpinned announcements sorted by `createdAt DESC`.
 
 ### GET `/announcements/:id`
 
@@ -758,6 +907,7 @@ Errors: `404 NOT_FOUND` if the id does not exist.
 Create a new announcement.
 
 Input (Society-wide announcement by an OB):
+
 ```json
 {
   "title": "Orientation Dates Announced",
@@ -768,6 +918,7 @@ Input (Society-wide announcement by an OB):
 ```
 
 Input (Team announcement by a Team Lead or OB):
+
 ```json
 {
   "teamId": "t1",
@@ -779,6 +930,7 @@ Input (Team announcement by a Team Lead or OB):
 ```
 
 Rules:
+
 1. `title` (required, 1 to 150 characters) and `content` (required, non-empty string).
 2. If `teamId` is omitted or `null`: only `ob` role can create it (`type` becomes `"society"`). If a non-OB tries, returns `403 FORBIDDEN`.
 3. If `teamId` is provided: `team_lead` can only create announcements for a team they lead (position `lead` or `colead`). `ob` can create announcements for any team.
@@ -788,6 +940,7 @@ Rules:
 Output `201`: the created **Announcement**.
 
 Errors:
+
 - `400 VALIDATION_ERROR`: title/content missing or invalid priority value.
 - `403 FORBIDDEN`: user is not an OB (when `teamId` is null), or team lead does not lead the specified team.
 - `404 NOT_FOUND`: specified `teamId` does not exist.
@@ -797,6 +950,7 @@ Errors:
 Update an announcement. Send only the fields you want to change (`title`, `content`, `priority`, `isPinned`).
 
 boom: pin an announcement and mark it urgent:
+
 ```json
 {
   "priority": "urgent",
@@ -807,17 +961,19 @@ boom: pin an announcement and mark it urgent:
 Output `200`: updated **Announcement** (with updated `updatedAt` timestamp).
 
 Errors:
+
 - `400 VALIDATION_ERROR`: invalid field values.
 - `403 FORBIDDEN`: caller is neither an OB nor the creator of this announcement.
 - `404 NOT_FOUND`: announcement doesn't exist.
 
 ### DELETE `/announcements/:id` (creator or ob)
 
-Deletes an announcement.
+Permanently deletes the announcement **and all comments on it**.
 
 No input. Output `204` (empty).
 
 Errors:
+
 - `403 FORBIDDEN`: caller is neither an OB nor the creator of this announcement.
 - `404 NOT_FOUND`: announcement doesn't exist.
 
@@ -829,28 +985,50 @@ Discussion and replies on announcements and meetings.
 
 ### Who can do what
 
-| Action | ob | faculty | executive | team_lead | member |
-|---|---|---|---|---|---|
-| View comments | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Post comment | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Edit own comment | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Delete own comment | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Delete any comment (moderation) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Action                          | ob  | faculty | executive | team_lead | member |
+| ------------------------------- | --- | ------- | --------- | --------- | ------ |
+| View comments                   | ✅  | ✅      | ✅        | ✅        | ✅     |
+| Post comment                    | ✅  | ✅      | ✅        | ✅        | ✅     |
+| Edit own comment                | ✅  | ✅      | ✅        | ✅        | ✅     |
+| Delete own comment              | ✅  | ✅      | ✅        | ✅        | ✅     |
+| Delete any comment (moderation) | ✅  | ❌      | ❌        | ❌        | ❌     |
 
 ---
 
 ### Data shape: Comment
 
+<<<<<<< HEAD
+| field           | type           | notes                                                                        |
+| --------------- | -------------- | ---------------------------------------------------------------------------- |
+| id              | string         | UUID                                                                         |
+| announcementId  | string or null | UUID of the announcement (if commenting on an announcement)                  |
+| meetingId       | string or null | UUID of the meeting (if commenting on a meeting)                             |
+| content         | string         | 1 to 1000 characters, trimmed                                                |
+| parentCommentId | string or null | UUID of the top-level comment this replies to, `null` for top-level comments |
+| createdBy       | object         | `{ id, name }`. **Set by server** from the token                             |
+| createdAt       | string         | ISO 8601 timestamp                                                           |
+| updatedAt       | string or null | ISO 8601 timestamp, `null` until edited                                      |
+
+Rules for the shape:
+
+- **Exactly one** of `announcementId` and `meetingId` is set, the other is `null`.
+- Threads are **one level deep**: a reply (`parentCommentId` set) cannot itself be replied to. Replies always point to a top-level comment.
+=======
 | field | type | notes |
 |---|---|---|
 | id | string | UUID |
 | announcementId | string or null | UUID of the announcement (if commenting on an announcement) |
 | meetingId | string or null | UUID of the meeting (if commenting on a meeting) |
 | content | string | 1 to 1000 characters, trimmed |
-| parentCommentId | string or null | UUID of parent comment if replying (must be a top-level comment), `null` for top-level comments |
+| parentCommentId | string or null | UUID of the top-level comment this replies to, `null` for top-level comments |
 | createdBy | object | `{ id, name }`. **Set by server** from the token |
 | createdAt | string | ISO 8601 timestamp |
 | updatedAt | string or null | ISO 8601 timestamp, `null` until edited |
+>>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
+
+Rules for the shape:
+- **Exactly one** of `announcementId` and `meetingId` is set, the other is `null`.
+- Threads are **one level deep**: a reply (`parentCommentId` set) cannot itself be replied to. Replies always point to a top-level comment.
 
 ```json
 {
@@ -874,6 +1052,7 @@ Discussion and replies on announcements and meetings.
 Fetch all comments for an announcement.
 
 Query params (all optional):
+
 - `parentCommentId`: filter replies to a specific comment, or pass `"null"` for top-level comments only
 - `page`: default `1`
 - `limit`: default `20` (max `100`)
@@ -881,16 +1060,17 @@ Query params (all optional):
 boom: `GET /announcements/a1/comments?page=1&limit=20`
 
 Output `200`:
+
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "c1",
       "announcementId": "a1",
       "meetingId": null,
       "content": "Will the practice files be shared before Wednesday?",
       "parentCommentId": null,
-      "createdBy": { "id": "u2", "name": "Rohit Singh" },
+      "createdBy": { "id": "u2", "name": "Riya Sharma" },
       "createdAt": "2026-11-20T11:00:00Z",
       "updatedAt": null
     },
@@ -909,7 +1089,11 @@ Output `200`:
 }
 ```
 
-*Sorting order:* Comments are sorted chronologically by `createdAt ASC` so discussions read naturally from top to bottom.
+_Sorting order:_ Comments are sorted chronologically by `createdAt ASC` so discussions read naturally from top to bottom.
+
+Errors: `404 NOT_FOUND` if the announcement does not exist.
+
+Errors: `404 NOT_FOUND` if the announcement does not exist.
 
 ### GET `/comments/:id`
 
@@ -923,6 +1107,7 @@ Errors: `404 NOT_FOUND` if the comment id does not exist.
 Post a comment on an announcement.
 
 Input (top-level comment):
+
 ```json
 {
   "content": "Will the practice files be shared before Wednesday?"
@@ -930,6 +1115,7 @@ Input (top-level comment):
 ```
 
 Input (reply to an existing comment):
+
 ```json
 {
   "content": "Yes, we will push them to GitHub by Tuesday evening.",
@@ -938,15 +1124,20 @@ Input (reply to an existing comment):
 ```
 
 Rules:
+
 1. `content`: required, string, 1 to 1000 characters, trimmed.
-2. `parentCommentId`: optional string or `null`. If provided, it must be the id of an existing **top-level** comment (`parentCommentId === null`) on the same announcement. Replying to a reply is not allowed (strict 1-level reply nesting).
+2. `parentCommentId`: optional string or `null`. If provided, must be the id of an existing **top-level** comment on the same announcement. Replying to a reply returns `400 VALIDATION_ERROR`.
 3. The parent announcement must exist.
 4. Any authenticated user can comment.
 
 Output `201`: the created **Comment**.
 
 Errors:
-- `400 VALIDATION_ERROR`: content missing, empty, exceeds 1000 characters, or attempting to reply to a reply (depth limit exceeded).
+<<<<<<< HEAD
+
+=======
+>>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
+- `400 VALIDATION_ERROR`: content missing, empty, or exceeds 1000 characters, or `parentCommentId` points to a reply.
 - `401 UNAUTHENTICATED`: missing or invalid token.
 - `404 NOT_FOUND`: announcement or `parentCommentId` does not exist.
 
@@ -958,7 +1149,7 @@ boom: `GET /meetings/m1/comments?page=1&limit=20`
 
 ### POST `/meetings/:id/comments` (any logged-in user)
 
-Post a comment on a meeting. Same body structure as announcement comments (`content`, optional `parentCommentId`). Sets `meetingId` to the target meeting id and `announcementId` to `null`.
+Post a comment on a meeting. Same body structure and rules as announcement comments (`content`, optional `parentCommentId`). Sets `meetingId` to the target meeting id and `announcementId` to `null`. Comments are allowed on cancelled meetings too.
 
 Output `201`: the created **Comment**.
 
@@ -967,6 +1158,7 @@ Output `201`: the created **Comment**.
 Update a comment's content. Only the author can edit their own comment.
 
 Input:
+
 ```json
 {
   "content": "Will the practice files be shared before Tuesday evening?"
@@ -976,6 +1168,7 @@ Input:
 Output `200`: updated **Comment** (with updated `updatedAt` timestamp).
 
 Errors:
+
 - `400 VALIDATION_ERROR`: content missing or invalid length.
 - `403 FORBIDDEN`: caller is not the author of this comment.
 - `404 NOT_FOUND`: comment doesn't exist.
@@ -986,11 +1179,15 @@ Delete a comment. Authors can delete their own comments; OBs can delete any comm
 
 No input. Output `204` (empty).
 
-*Cascade rule:* Permanently hard deletes the comment. Deleting a top-level comment permanently cascade-deletes all its child replies.
+<<<<<<< HEAD
+_Delete rule:_ this is a **hard delete**. The comment is removed permanently. Deleting a top-level comment also permanently deletes all of its replies. Deleting a reply removes only that reply.
+=======
+*Delete rule:* this is a **hard delete**. The comment is removed permanently. Deleting a top-level comment also permanently deletes all of its replies. Deleting a reply removes only that reply.
+>>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
 
 Errors:
+
 - `403 FORBIDDEN`: caller is neither an OB nor the creator of this comment.
 - `404 NOT_FOUND`: comment doesn't exist.
 
 ---
-

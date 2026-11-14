@@ -18,7 +18,6 @@ export const TeamPositionEnum = {
 
 export const AvailableTeamPositions = Object.values(TeamPositionEnum);
 
-
 export const TeamTypeEnum = {
   CORE: "core",
   SUBCLUB: "subclub",
@@ -60,7 +59,7 @@ export const AnnouncementPriorityEnum = {
 };
 
 export const AvailableAnnouncementPriorities = Object.values(
-  AnnouncementPriorityEnum
+  AnnouncementPriorityEnum,
 );
 
 export const ErrorCodeEnum = {

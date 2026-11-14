@@ -1,0 +1,23 @@
+$kind: http-request
+description: Login as OB (President)
+url: "{{baseUrl}}/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "aman@techspace.com",
+      "password": "password123"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 200) {
+          const response = pm.response.json();
+          pm.collectionVariables.set('token', response.data.token);
+          console.log('Token saved:', response.data.token);
+      }
+    language: text/javascript
+order: 1000

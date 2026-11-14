@@ -1,0 +1,5 @@
+$kind: collection
+description: Authentication endpoints for Techspace Meeting Calendar
+variables:
+  baseUrl: http://localhost:8000/api/v1
+  token: ""
