@@ -250,7 +250,14 @@ Output `200`:
       "teams": [{ "teamId": "t1", "teamName": "Tech Team", "position": "lead" }]
     }
   ],
-  "pagination": { "page": 1, "limit": 20, "total": 1, "totalPages": 1, "hasNextPage": false, "hasPreviousPage": false }
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
 }
 ```
 
@@ -850,7 +857,14 @@ Output `200`:
       "updatedAt": null
     }
   ],
-  "pagination": { "page": 1, "limit": 20, "total": 1, "totalPages": 1, "hasNextPage": false, "hasPreviousPage": false }
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
 }
 ```
 
@@ -970,6 +984,7 @@ Discussion and replies on announcements and meetings.
 | updatedAt       | string or null | ISO 8601 timestamp, `null` until edited                                      |
 
 Rules for the shape:
+
 - **Exactly one** of `announcementId` and `meetingId` is set, the other is `null`.
 - Threads are **one level deep**: a reply (`parentCommentId` set) cannot itself be replied to. Replies always point to a top-level comment.
 
@@ -1028,7 +1043,14 @@ Output `200`:
       "updatedAt": null
     }
   ],
-  "pagination": { "page": 1, "limit": 20, "total": 2, "totalPages": 1, "hasNextPage": false, "hasPreviousPage": false }
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 2,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
 }
 ```
 
@@ -1076,6 +1098,7 @@ Rules:
 Output `201`: the created **Comment**.
 
 Errors:
+
 - `400 VALIDATION_ERROR`: content missing, empty, or exceeds 1000 characters, or `parentCommentId` points to a reply.
 - `401 UNAUTHENTICATED`: missing or invalid token.
 - `404 NOT_FOUND`: announcement or `parentCommentId` does not exist.
@@ -1118,7 +1141,7 @@ Delete a comment. Authors can delete their own comments; OBs can delete any comm
 
 No input. Output `204` (empty).
 
-*Delete rule:* this is a **hard delete**. The comment is removed permanently. Deleting a top-level comment also permanently deletes all of its replies. Deleting a reply removes only that reply.
+_Delete rule:_ this is a **hard delete**. The comment is removed permanently. Deleting a top-level comment also permanently deletes all of its replies. Deleting a reply removes only that reply.
 
 Errors:
 

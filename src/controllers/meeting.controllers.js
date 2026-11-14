@@ -12,8 +12,6 @@ import {
 } from "../utils/constants.js";
 import { userLeadsTeam } from "../utils/userUtils.js";
 import {
-  isValidDateFormat,
-  isValidTimeFormat,
   isEndTimeAfterStartTime,
   findMeetingClashes,
 } from "../utils/meetingUtils.js";
@@ -26,22 +24,6 @@ import db from "../db/index.js";
 export const getMeetings = asyncHandler(async (req, res) => {
   const { from, to, type, teamId, status } = req.query;
 
-  if (!from || !to) {
-    throw new ApiError(
-      400,
-      ErrorCodeEnum.VALIDATION_ERROR,
-      "'from' and 'to' query parameters are required (YYYY-MM-DD)",
-    );
-  }
-
-  if (!isValidDateFormat(from) || !isValidDateFormat(to)) {
-    throw new ApiError(
-      400,
-      ErrorCodeEnum.VALIDATION_ERROR,
-      "Invalid date format for 'from' or 'to'. Use YYYY-MM-DD",
-    );
-  }
-
   const fromDate = new Date(from);
   const toDate = new Date(to);
 
@@ -53,7 +35,7 @@ export const getMeetings = asyncHandler(async (req, res) => {
     );
   }
 
-  const diffDays = Math.round((toDate - fromDate) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24));
   if (diffDays > 62) {
     throw new ApiError(
       400,
@@ -115,9 +97,9 @@ export const getMeetingById = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Meeting not found");
   }
 
-  res.status(200).json(
-    new ApiResponse(200, meeting, "Meeting fetched successfully"),
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, meeting, "Meeting fetched successfully"));
 });
 
 /**
@@ -127,30 +109,7 @@ export const getMeetingById = asyncHandler(async (req, res) => {
 export const checkMeetingClash = asyncHandler(async (req, res) => {
   const { date, startTime, endTime, excludeMeetingId } = req.body;
 
-  if (!date || !startTime || !endTime) {
-    throw new ApiError(
-      400,
-      ErrorCodeEnum.VALIDATION_ERROR,
-      "date, startTime, and endTime are required",
-    );
-  }
-
-  if (!isValidDateFormat(date)) {
-    throw new ApiError(
-      400,
-      ErrorCodeEnum.VALIDATION_ERROR,
-      "date must be YYYY-MM-DD",
-    );
-  }
-
-  if (!isValidTimeFormat(startTime) || !isValidTimeFormat(endTime)) {
-    throw new ApiError(
-      400,
-      ErrorCodeEnum.VALIDATION_ERROR,
-      "startTime and endTime must be in HH:mm 24-hour format",
-    );
-  }
-
+  // Format already validated by checkClashValidator; only check the cross-field rule
   if (!isEndTimeAfterStartTime(startTime, endTime)) {
     throw new ApiError(
       400,
@@ -182,27 +141,9 @@ export const checkMeetingClash = asyncHandler(async (req, res) => {
  * POST /api/v1/meetings (OB or team_lead)
  */
 export const createMeeting = asyncHandler(async (req, res) => {
-  const {
-    topic,
-    date,
-    startTime,
-    endTime,
-    teamId,
-    note,
-    location,
-    link,
-  } = req.body;
-
-  const isOB = req.user.role === UserRolesEnum.OB;
+  const { topic, date, startTime, endTime, teamId, note, location, link } =
+    req.body;
   const isTeamLead = req.user.role === UserRolesEnum.TEAM_LEAD;
-
-  if (!isOB && !isTeamLead) {
-    throw new ApiError(
-      403,
-      ErrorCodeEnum.FORBIDDEN,
-      "Only OBs and team leads can create meetings",
-    );
-  }
 
   if (!isEndTimeAfterStartTime(startTime, endTime)) {
     throw new ApiError(
@@ -285,9 +226,9 @@ export const createMeeting = asyncHandler(async (req, res) => {
 
   await db.createMeeting(newMeeting);
 
-  res.status(201).json(
-    new ApiResponse(201, newMeeting, "Meeting created successfully"),
-  );
+  res
+    .status(201)
+    .json(new ApiResponse(201, newMeeting, "Meeting created successfully"));
 });
 
 /**
@@ -295,16 +236,8 @@ export const createMeeting = asyncHandler(async (req, res) => {
  */
 export const updateMeeting = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const {
-    topic,
-    date,
-    startTime,
-    endTime,
-    teamId,
-    note,
-    location,
-    link,
-  } = req.body;
+  const { topic, date, startTime, endTime, teamId, note, location, link } =
+    req.body;
 
   const meeting = await db.getMeetingById(id);
   if (!meeting) {
@@ -350,7 +283,8 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   }
 
   const finalDate = date !== undefined ? date : meeting.date;
-  const finalStartTime = startTime !== undefined ? startTime : meeting.startTime;
+  const finalStartTime =
+    startTime !== undefined ? startTime : meeting.startTime;
   const finalEndTime = endTime !== undefined ? endTime : meeting.endTime;
 
   if (!isEndTimeAfterStartTime(finalStartTime, finalEndTime)) {
@@ -428,7 +362,9 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     startTime: finalStartTime,
     endTime: finalEndTime,
     ...(note !== undefined && { note: note ? note.trim() : null }),
-    ...(location !== undefined && { location: location ? location.trim() : null }),
+    ...(location !== undefined && {
+      location: location ? location.trim() : null,
+    }),
     ...(link !== undefined && { link: link ? link.trim() : null }),
     ...teamUpdates,
   };
@@ -437,9 +373,9 @@ export const updateMeeting = asyncHandler(async (req, res) => {
 
   const updatedMeeting = await db.getMeetingById(meeting.id);
 
-  res.status(200).json(
-    new ApiResponse(200, updatedMeeting, "Meeting updated successfully"),
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, updatedMeeting, "Meeting updated successfully"));
 });
 
 /**
@@ -464,15 +400,23 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
     );
   }
 
+  if (meeting.status === MeetingStatusEnum.CANCELLED) {
+    throw new ApiError(
+      409,
+      ErrorCodeEnum.CONFLICT,
+      "Meeting is already cancelled",
+    );
+  }
+
   await db.updateMeeting(meeting.id, {
     status: MeetingStatusEnum.CANCELLED,
   });
 
   const updated = await db.getMeetingById(meeting.id);
 
-  res.status(200).json(
-    new ApiResponse(200, updated, "Meeting cancelled successfully"),
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, updated, "Meeting cancelled successfully"));
 });
 
 /**

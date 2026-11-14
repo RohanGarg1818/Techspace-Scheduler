@@ -1,7 +1,14 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
+const DEFAULT_SECRET = "your-secret-key-change-this";
+const JWT_SECRET = process.env.JWT_SECRET || DEFAULT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+
+if (JWT_SECRET === DEFAULT_SECRET) {
+  console.warn(
+    "[SECURITY WARNING] JWT_SECRET is not set. Using the insecure default. Set JWT_SECRET in your .env file.",
+  );
+}
 
 /**
  * Generate a JWT token for a user

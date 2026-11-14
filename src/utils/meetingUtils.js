@@ -5,9 +5,13 @@ import { MeetingStatusEnum } from "./constants.js";
  * Checks if a string matches YYYY-MM-DD format
  */
 export const isValidDateFormat = (dateStr) => {
-  if (!dateStr || typeof dateStr !== "string") return false;
+  if (!dateStr || typeof dateStr !== "string") {
+    return false;
+  }
   const regex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!regex.test(dateStr)) return false;
+  if (!regex.test(dateStr)) {
+    return false;
+  }
   const d = new Date(dateStr);
   return d instanceof Date && !isNaN(d.getTime());
 };
@@ -16,7 +20,9 @@ export const isValidDateFormat = (dateStr) => {
  * Checks if a string matches HH:mm (24-hour) format
  */
 export const isValidTimeFormat = (timeStr) => {
-  if (!timeStr || typeof timeStr !== "string") return false;
+  if (!timeStr || typeof timeStr !== "string") {
+    return false;
+  }
   const regex = /^([01]\d|2[0-3]):[0-5]\d$/;
   return regex.test(timeStr);
 };

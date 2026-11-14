@@ -28,7 +28,8 @@ export const authenticate = asyncHandler(async (req, res, next) => {
         "User no longer exists",
       );
     }
-    req.user = user;
+    const { password: _password, ...safeUser } = user;
+    req.user = safeUser;
     next();
   } catch (error) {
     if (error.name === "JsonWebTokenError") {

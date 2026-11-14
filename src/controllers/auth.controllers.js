@@ -68,9 +68,11 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
 export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
+  const userWithPassword = await db.getUserByEmail(req.user.email);
+
   const isPasswordValid = await comparePassword(
     currentPassword,
-    req.user.password,
+    userWithPassword.password,
   );
 
   if (!isPasswordValid) {

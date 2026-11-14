@@ -30,18 +30,14 @@ export const createMeetingValidator = () => {
       .withMessage("End time is required")
       .matches(/^([01]\d|2[0-3]):[0-5]\d$/)
       .withMessage("End time must be in HH:mm 24-hour format"),
-    body("teamId")
-      .optional({ nullable: true })
-      .trim(),
-    body("note")
-      .optional({ nullable: true })
-      .trim(),
-    body("location")
-      .optional({ nullable: true })
-      .trim(),
+    body("teamId").optional({ nullable: true }).trim(),
+    body("note").optional({ nullable: true }).trim(),
+    body("location").optional({ nullable: true }).trim(),
     body("link")
       .optional({ nullable: true })
-      .trim(),
+      .trim()
+      .isURL()
+      .withMessage("link must be a valid URL"),
   ];
 };
 
@@ -69,18 +65,14 @@ export const updateMeetingValidator = () => {
       .trim()
       .matches(/^([01]\d|2[0-3]):[0-5]\d$/)
       .withMessage("End time must be in HH:mm 24-hour format"),
-    body("teamId")
-      .optional({ nullable: true })
-      .trim(),
-    body("note")
-      .optional({ nullable: true })
-      .trim(),
-    body("location")
-      .optional({ nullable: true })
-      .trim(),
+    body("teamId").optional({ nullable: true }).trim(),
+    body("note").optional({ nullable: true }).trim(),
+    body("location").optional({ nullable: true }).trim(),
     body("link")
       .optional({ nullable: true })
-      .trim(),
+      .trim()
+      .isURL()
+      .withMessage("link must be a valid URL"),
   ];
 };
 
@@ -104,9 +96,7 @@ export const checkClashValidator = () => {
       .withMessage("End time is required")
       .matches(/^([01]\d|2[0-3]):[0-5]\d$/)
       .withMessage("End time must be in HH:mm 24-hour format"),
-    body("excludeMeetingId")
-      .optional({ nullable: true })
-      .trim(),
+    body("excludeMeetingId").optional({ nullable: true }).trim(),
   ];
 };
 
@@ -128,12 +118,12 @@ export const getMeetingsQueryValidator = () => {
       .optional()
       .isIn(AvailableMeetingTypes)
       .withMessage(`Type must be one of: ${AvailableMeetingTypes.join(", ")}`),
-    query("teamId")
-      .optional()
-      .trim(),
+    query("teamId").optional().trim(),
     query("status")
       .optional()
       .isIn([...AvailableMeetingStatuses, "all"])
-      .withMessage(`Status must be one of: ${[...AvailableMeetingStatuses, "all"].join(", ")}`),
+      .withMessage(
+        `Status must be one of: ${[...AvailableMeetingStatuses, "all"].join(", ")}`,
+      ),
   ];
 };

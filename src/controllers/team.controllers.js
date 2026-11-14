@@ -5,13 +5,9 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import {
   ErrorCodeEnum,
   UserRolesEnum,
-  TeamPositionEnum,
 } from "../utils/constants.js";
 import { formatTeamResponse } from "../utils/teamUtils.js";
-import {
-  isLeadPosition,
-  hasLeadOrColeadPosition,
-} from "../utils/userUtils.js";
+import { isLeadPosition, hasLeadOrColeadPosition } from "../utils/userUtils.js";
 import db from "../db/index.js";
 
 /**
@@ -53,9 +49,9 @@ export const getTeamById = asyncHandler(async (req, res) => {
 
   const teamResponse = await formatTeamResponse(team, true);
 
-  res.status(200).json(
-    new ApiResponse(200, teamResponse, "Team fetched successfully"),
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, teamResponse, "Team fetched successfully"));
 });
 
 /**
@@ -88,9 +84,9 @@ export const createTeam = asyncHandler(async (req, res) => {
 
   const teamResponse = await formatTeamResponse(newTeam);
 
-  res.status(201).json(
-    new ApiResponse(201, teamResponse, "Team created successfully"),
-  );
+  res
+    .status(201)
+    .json(new ApiResponse(201, teamResponse, "Team created successfully"));
 });
 
 /**
@@ -113,12 +109,13 @@ export const updateTeam = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Team not found");
   }
 
-  if (name !== undefined && name.trim().toLowerCase() !== team.name.toLowerCase()) {
+  if (
+    name !== undefined &&
+    name.trim().toLowerCase() !== team.name.toLowerCase()
+  ) {
     const allTeams = await db.getAllTeams();
     const conflict = allTeams.find(
-      (t) =>
-        t.id !== id &&
-        t.name.toLowerCase() === name.trim().toLowerCase(),
+      (t) => t.id !== id && t.name.toLowerCase() === name.trim().toLowerCase(),
     );
 
     if (conflict) {
@@ -143,9 +140,9 @@ export const updateTeam = asyncHandler(async (req, res) => {
   const updatedTeam = await db.getTeamById(id);
   const teamResponse = await formatTeamResponse(updatedTeam);
 
-  res.status(200).json(
-    new ApiResponse(200, teamResponse, "Team updated successfully"),
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, teamResponse, "Team updated successfully"));
 });
 
 /**
@@ -159,15 +156,30 @@ export const deleteTeam = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Team not found");
   }
 
+  // Check if deleting this team would leave any team_lead with no lead/colead team
+  const allUsers = await db.getAllUsers();
+  const orphanedLeads = allUsers.filter(
+    (u) =>
+      u.role === UserRolesEnum.TEAM_LEAD &&
+      Array.isArray(u.teams) &&
+      u.teams.some((t) => t.teamId === id && isLeadPosition(t.position)) &&
+      !u.teams.some((t) => t.teamId !== id && isLeadPosition(t.position)),
+  );
+
+  if (orphanedLeads.length > 0) {
+    throw new ApiError(
+      409,
+      ErrorCodeEnum.CONFLICT,
+      `Cannot delete team: ${orphanedLeads.map((u) => u.name).join(", ")} would have no lead/colead team left`,
+    );
+  }
+
   // Check if team has upcoming scheduled meetings
   const allMeetings = await db.getAllMeetings();
   const today = new Date().toISOString().slice(0, 10);
   const hasUpcomingScheduled = allMeetings.some(
     (m) =>
-      m.team &&
-      m.team.id === id &&
-      m.status === "scheduled" &&
-      m.date >= today,
+      m.team && m.team.id === id && m.status === "scheduled" && m.date >= today,
   );
 
   if (hasUpcomingScheduled) {
@@ -179,7 +191,6 @@ export const deleteTeam = asyncHandler(async (req, res) => {
   }
 
   // Remove this team from any user who belongs to it
-  const allUsers = await db.getAllUsers();
   for (const user of allUsers) {
     if (Array.isArray(user.teams) && user.teams.some((t) => t.teamId === id)) {
       user.teams = user.teams.filter((t) => t.teamId !== id);
@@ -233,13 +244,11 @@ export const addOrUpdateTeamMember = asyncHandler(async (req, res) => {
   const updatedTeam = await db.getTeamById(id);
   const teamResponse = await formatTeamResponse(updatedTeam, true);
 
-  res.status(200).json(
-    new ApiResponse(
-      200,
-      teamResponse,
-      "Team member updated successfully",
-    ),
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, teamResponse, "Team member updated successfully"),
+    );
 });
 
 /**
@@ -273,7 +282,10 @@ export const removeTeamMember = asyncHandler(async (req, res) => {
   // Rule: role = "team_lead" needs at least one team with position lead or colead
   const remainingTeams = user.teams.filter((t) => t.teamId !== id);
 
-  if (user.role === UserRolesEnum.TEAM_LEAD && !hasLeadOrColeadPosition(remainingTeams)) {
+  if (
+    user.role === UserRolesEnum.TEAM_LEAD &&
+    !hasLeadOrColeadPosition(remainingTeams)
+  ) {
     throw new ApiError(
       400,
       ErrorCodeEnum.VALIDATION_ERROR,

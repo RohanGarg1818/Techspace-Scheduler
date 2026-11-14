@@ -9,7 +9,9 @@ import { isLeadPosition } from "./userUtils.js";
  * - members: [{ id, name, position }] (only if includeMembers is true)
  */
 export const formatTeamResponse = async (team, includeMembers = false) => {
-  if (!team) return null;
+  if (!team) {
+    return null;
+  }
 
   const allUsers = await db.getAllUsers();
 

@@ -12,10 +12,7 @@ export const createAnnouncementValidator = () => {
       .withMessage("Title is required")
       .isLength({ min: 1, max: 150 })
       .withMessage("Title must be between 1 and 150 characters"),
-    body("content")
-      .trim()
-      .notEmpty()
-      .withMessage("Content is required"),
+    body("content").trim().notEmpty().withMessage("Content is required"),
     body("priority")
       .optional()
       .isIn(AvailableAnnouncementPriorities)
@@ -26,9 +23,7 @@ export const createAnnouncementValidator = () => {
       .optional()
       .isBoolean()
       .withMessage("isPinned must be a boolean"),
-    body("teamId")
-      .optional({ nullable: true })
-      .trim(),
+    body("teamId").optional({ nullable: true }).trim(),
   ];
 };
 
@@ -64,10 +59,10 @@ export const getAnnouncementsQueryValidator = () => {
     query("type")
       .optional()
       .isIn(AvailableAnnouncementTypes)
-      .withMessage(`Type must be one of: ${AvailableAnnouncementTypes.join(", ")}`),
-    query("teamId")
-      .optional()
-      .trim(),
+      .withMessage(
+        `Type must be one of: ${AvailableAnnouncementTypes.join(", ")}`,
+      ),
+    query("teamId").optional().trim(),
     query("isPinned")
       .optional()
       .isIn(["true", "false"])

@@ -56,7 +56,9 @@ export const getDashboardData = asyncHandler(async (req, res) => {
 
   // Format teams into coreTeams and subClubs
   const coreTeamObjects = allTeams.filter((t) => t.type === TeamTypeEnum.CORE);
-  const subClubObjects = allTeams.filter((t) => t.type === TeamTypeEnum.SUBCLUB);
+  const subClubObjects = allTeams.filter(
+    (t) => t.type === TeamTypeEnum.SUBCLUB,
+  );
 
   const [coreTeams, subClubs] = await Promise.all([
     Promise.all(
@@ -98,11 +100,13 @@ export const getDashboardData = asyncHandler(async (req, res) => {
     subClubs,
   };
 
-  res.status(200).json(
-    new ApiResponse(
-      200,
-      dashboardData,
-      "Dashboard data fetched successfully",
-    ),
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        dashboardData,
+        "Dashboard data fetched successfully",
+      ),
+    );
 });

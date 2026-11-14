@@ -81,9 +81,9 @@ export const getUserById = asyncHandler(async (req, res) => {
 
   const userResponse = await formatUserResponse(user);
 
-  res.status(200).json(
-    new ApiResponse(200, userResponse, "User fetched successfully"),
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, userResponse, "User fetched successfully"));
 });
 
 /**
@@ -119,9 +119,9 @@ export const createUser = asyncHandler(async (req, res) => {
 
   const userResponse = await formatUserResponse(newUser);
 
-  res.status(201).json(
-    new ApiResponse(201, userResponse, "User created successfully"),
-  );
+  res
+    .status(201)
+    .json(new ApiResponse(201, userResponse, "User created successfully"));
 });
 
 /**
@@ -185,7 +185,7 @@ export const updateUser = asyncHandler(async (req, res) => {
 
   // Compute final values for cross-field validation
   const finalRole = role !== undefined ? role : user.role;
-  let finalObTitle =
+  const finalObTitle =
     finalRole === UserRolesEnum.OB
       ? obTitle !== undefined
         ? obTitle
@@ -214,9 +214,9 @@ export const updateUser = asyncHandler(async (req, res) => {
   const updatedUser = await db.getUserById(user.id);
   const userResponse = await formatUserResponse(updatedUser);
 
-  res.status(200).json(
-    new ApiResponse(200, userResponse, "User updated successfully"),
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, userResponse, "User updated successfully"));
 });
 
 /**
