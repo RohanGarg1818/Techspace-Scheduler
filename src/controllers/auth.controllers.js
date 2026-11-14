@@ -51,7 +51,7 @@ export const login = asyncHandler(async (req, res) => {
     );
   }
 
-  const user = await db.getUserByEmail(email);
+  const user = await db.getUserByEmail(email.toLowerCase());
 
   if (!user) {
     throw new ApiError(

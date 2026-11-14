@@ -33,12 +33,14 @@ app.use((err, req, res, _next) => {
   const statusCode = err.statusCode || 500;
 
   const response = {
+    success: false,
+    statusCode,
+    message: err.message || "Something went wrong",
     error: {
       code: err.code || "INTERNAL_ERROR",
-      message: err.message || "Something went wrong",
-      ...(err.details && { details: err.details }),
+      details: err.details || null,
     },
-    ...(err.extra || {}),
+    data: err.extra || null,
   };
 
   return res.status(statusCode).json(response);

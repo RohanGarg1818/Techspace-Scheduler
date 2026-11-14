@@ -10,11 +10,15 @@ class Database {
 
   // User
   async createUser(user) {
-    this.users.set(user.id, user);
-    if (user.teams && user.teams.length > 0) {
-      this.userTeams.set(user.id, user.teams);
+    const normalizedUser = {
+      ...user,
+      email: user.email.toLowerCase(),
+    };
+    this.users.set(normalizedUser.id, normalizedUser);
+    if (normalizedUser.teams && normalizedUser.teams.length > 0) {
+      this.userTeams.set(normalizedUser.id, normalizedUser.teams);
     }
-    return user;
+    return normalizedUser;
   }
 
   async getUserById(id) {
@@ -27,7 +31,7 @@ class Database {
 
   async getUserByEmail(email) {
     for (const user of this.users.values()) {
-      if (user.email === email.toLowerCase() && !user.deletedAt) {
+      if (user.email === email && !user.deletedAt) {
         return user;
       }
     }
@@ -39,7 +43,11 @@ class Database {
     if (!user || user.deletedAt) {
       return null;
     }
-    Object.assign(user, updates);
+    const normalizedUpdates = {
+      ...updates,
+      ...(updates.email && { email: updates.email.toLowerCase() }),
+    };
+    Object.assign(user, normalizedUpdates);
     return user;
   }
 
