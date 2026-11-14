@@ -1,7 +1,8 @@
+import { v4 as uuidv4 } from "uuid";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import { ErrorCodeEnum } from "../utils/constants.js";
+import { ErrorCodeEnum, UserRolesEnum } from "../utils/constants.js";
 import { hashPassword, comparePassword } from "../utils/passwordUtils.js";
 import { generateToken } from "../utils/jwtUtils.js";
 import db from "../db/index.js";
@@ -30,29 +31,64 @@ const formatUserResponse = async (user) => {
 };
 
 /**
+ * POST /api/v1/auth/signup
+ */
+export const signup = asyncHandler(async (req, res) => {
+  const { email, name, password, role, obTitle, teams } = req.body;
+
+  const existingUser = await db.getUserByEmail(email);
+  if (existingUser) {
+    throw new ApiError(
+      409,
+      ErrorCodeEnum.CONFLICT,
+      "User with this email already exists",
+    );
+  }
+
+  const hashedPassword = await hashPassword(password);
+  const userRole = role || UserRolesEnum.MEMBER;
+  const userObTitle = userRole === UserRolesEnum.OB ? obTitle || null : null;
+
+  const newUser = {
+    id: uuidv4(),
+    name: name.trim(),
+    email: email.trim().toLowerCase(),
+    password: hashedPassword,
+    role: userRole,
+    obTitle: userObTitle,
+    teams: Array.isArray(teams) ? teams : [],
+    deletedAt: null,
+  };
+
+  await db.createUser(newUser);
+
+  const token = generateToken({
+    id: newUser.id,
+    email: newUser.email,
+    role: newUser.role,
+  });
+
+  const userResponse = await formatUserResponse(newUser);
+
+  res.status(201).json(
+    new ApiResponse(
+      201,
+      {
+        token,
+        user: userResponse,
+      },
+      "User registered successfully",
+    ),
+  );
+});
+
+/**
  * POST /api/v1/auth/login
  */
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    throw new ApiError(
-      400,
-      ErrorCodeEnum.VALIDATION_ERROR,
-      "Email and password are required",
-      {
-        details: [
-          ...(!email ? [{ field: "email", issue: "Email is required" }] : []),
-          ...(!password
-            ? [{ field: "password", issue: "Password is required" }]
-            : []),
-        ],
-      },
-    );
-  }
-
   const user = await db.getUserByEmail(email);
-
   if (!user) {
     throw new ApiError(
       401,
@@ -62,7 +98,6 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   const isPasswordValid = await comparePassword(password, user.password);
-
   if (!isPasswordValid) {
     throw new ApiError(
       401,
@@ -97,7 +132,7 @@ export const login = asyncHandler(async (req, res) => {
 export const getCurrentUser = asyncHandler(async (req, res) => {
   const userResponse = await formatUserResponse(req.user);
 
-  res
+  return res
     .status(200)
     .json(new ApiResponse(200, userResponse, "User fetched successfully"));
 });
@@ -107,42 +142,6 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
  */
 export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-
-  if (!currentPassword || !newPassword) {
-    throw new ApiError(
-      400,
-      ErrorCodeEnum.VALIDATION_ERROR,
-      "Current password and new password are required",
-      {
-        details: [
-          ...(!currentPassword
-            ? [
-              {
-                field: "currentPassword",
-                issue: "Current password is required",
-              },
-            ]
-            : []),
-          ...(!newPassword
-            ? [{ field: "newPassword", issue: "New password is required" }]
-            : []),
-        ],
-      },
-    );
-  }
-
-  if (newPassword.length < 8) {
-    throw new ApiError(
-      400,
-      ErrorCodeEnum.VALIDATION_ERROR,
-      "New password must be at least 8 characters",
-      {
-        details: [
-          { field: "newPassword", issue: "Must be at least 8 characters" },
-        ],
-      },
-    );
-  }
 
   const isPasswordValid = await comparePassword(
     currentPassword,
@@ -160,5 +159,7 @@ export const changePassword = asyncHandler(async (req, res) => {
   const hashedPassword = await hashPassword(newPassword);
   await db.updateUser(req.user.id, { password: hashedPassword });
 
-  res.status(204).send();
+  return res
+    .status(204)
+    .json(new ApiResponse(204, {}, "Password changed successfully"));
 });
