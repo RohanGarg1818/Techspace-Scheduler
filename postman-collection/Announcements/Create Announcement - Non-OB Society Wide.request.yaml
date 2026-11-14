@@ -1,0 +1,15 @@
+$kind: http-request
+description: Non-OB tries to create a society-wide announcement (no teamId) - should return 403 FORBIDDEN. Login as team lead or member first.
+url: "{{baseUrl}}/announcements"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "title": "Sneaky Society Announcement",
+      "content": "Only OBs should be able to do this"
+    }
+order: 10000

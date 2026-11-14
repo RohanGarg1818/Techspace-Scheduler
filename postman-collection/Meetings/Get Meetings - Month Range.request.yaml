@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get all meetings for November 2026 (month view)
+url: "{{baseUrl}}/meetings?from=2026-11-01&to=2026-11-30"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 1000

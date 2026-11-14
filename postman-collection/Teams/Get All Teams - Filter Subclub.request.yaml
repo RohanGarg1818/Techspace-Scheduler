@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get only sub-clubs
+url: "{{baseUrl}}/teams?type=subclub"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 3000

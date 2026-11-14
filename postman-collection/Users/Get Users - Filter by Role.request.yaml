@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get users filtered by role=team_lead
+url: "{{baseUrl}}/users?role=team_lead&page=1&limit=20"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 2000

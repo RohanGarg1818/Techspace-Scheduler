@@ -1,0 +1,27 @@
+$kind: http-request
+description: Create a team announcement. Login as OB or the team lead for teamId. Saves announcementId.
+url: "{{baseUrl}}/announcements"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "teamId": "{{teamId}}",
+      "title": "Git Workshop Practice Files",
+      "content": "Please clone the starter repo before Wednesday's meeting.",
+      "priority": "normal",
+      "isPinned": false
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 201) {
+          const response = pm.response.json();
+          pm.collectionVariables.set('announcementId', response.data.id);
+          console.log('announcementId saved:', response.data.id);
+      }
+    language: text/javascript
+order: 7000

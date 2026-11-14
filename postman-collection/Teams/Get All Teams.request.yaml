@@ -1,0 +1,19 @@
+$kind: http-request
+description: Get all teams. Saves first team's ID to teamId variable.
+url: "{{baseUrl}}/teams"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 200) {
+          const response = pm.response.json();
+          const items = response.data.items;
+          if (items && items.length > 0) {
+              pm.collectionVariables.set('teamId', items[0].id);
+              console.log('teamId saved:', items[0].id);
+          }
+      }
+    language: text/javascript
+order: 1000

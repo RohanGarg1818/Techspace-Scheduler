@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get all users (paginated). No filters.
+url: "{{baseUrl}}/users"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 1000

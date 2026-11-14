@@ -1,0 +1,15 @@
+$kind: http-request
+description: Missing required fields (topic, endTime) - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/meetings"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "date": "2026-12-01",
+      "startTime": "10:00"
+    }
+order: 19000

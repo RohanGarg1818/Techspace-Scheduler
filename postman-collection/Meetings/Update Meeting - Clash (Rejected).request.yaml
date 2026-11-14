@@ -1,0 +1,16 @@
+$kind: http-request
+description: Update meeting to a time that clashes with another - should return 409 MEETING_CLASH. Uses meetingId.
+url: "{{baseUrl}}/meetings/{{meetingId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "date": "2026-11-20",
+      "startTime": "15:00",
+      "endTime": "16:00"
+    }
+order: 22000

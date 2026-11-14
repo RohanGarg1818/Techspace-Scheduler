@@ -1,0 +1,15 @@
+$kind: http-request
+description: Non-OB tries to create a team - should return 403 FORBIDDEN. Login as member first.
+url: "{{baseUrl}}/teams"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Sneaky Team",
+      "type": "core"
+    }
+order: 9000

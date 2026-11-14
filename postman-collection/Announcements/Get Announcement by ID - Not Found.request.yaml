@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get announcement with non-existent ID - should return 404 NOT_FOUND
+url: "{{baseUrl}}/announcements/00000000-0000-0000-0000-000000000000"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 5000

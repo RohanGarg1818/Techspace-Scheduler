@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get a single meeting by ID. Uses meetingId variable set by Create Meeting.
+url: "{{baseUrl}}/meetings/{{meetingId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 8000

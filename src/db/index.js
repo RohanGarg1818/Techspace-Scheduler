@@ -5,16 +5,16 @@ class Database {
     this.meetings = new Map();
     this.announcements = new Map();
     this.comments = new Map();
-    this.userTeams = new Map(); // userId -> [{teamId, position}]
   }
 
   // User
   async createUser(user) {
-    this.users.set(user.id, user);
-    if (user.teams && user.teams.length > 0) {
-      this.userTeams.set(user.id, user.teams);
-    }
-    return user;
+    const normalizedUser = {
+      ...user,
+      email: user.email.toLowerCase(),
+    };
+    this.users.set(normalizedUser.id, normalizedUser);
+    return normalizedUser;
   }
 
   async getUserById(id) {
@@ -26,8 +26,9 @@ class Database {
   }
 
   async getUserByEmail(email) {
+    const normalized = email.toLowerCase();
     for (const user of this.users.values()) {
-      if (user.email === email.toLowerCase() && !user.deletedAt) {
+      if (user.email === normalized && !user.deletedAt) {
         return user;
       }
     }
@@ -39,7 +40,13 @@ class Database {
     if (!user || user.deletedAt) {
       return null;
     }
-    Object.assign(user, updates);
+    const normalizedUpdates = {
+      ...updates,
+      ...(updates.email !== undefined && {
+        email: updates.email.toLowerCase(),
+      }),
+    };
+    Object.assign(user, normalizedUpdates);
     return user;
   }
 
@@ -50,7 +57,6 @@ class Database {
     }
     user.deletedAt = new Date().toISOString();
     user.teams = [];
-    this.userTeams.delete(id);
     return user;
   }
 

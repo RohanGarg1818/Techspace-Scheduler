@@ -1,0 +1,7 @@
+$kind: http-request
+description: User who is neither the author nor OB tries to delete - should return 403 FORBIDDEN. Login as a different non-OB user. Uses commentId.
+url: "{{baseUrl}}/comments/{{commentId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+order: 13000

@@ -23,10 +23,23 @@ const router = Router();
 
 // Authenticated users can view teams
 router.get("/", authenticate, getTeamsQueryValidator(), validate, getTeams);
-router.get("/:id", authenticate, userParamValidator("id"), validate, getTeamById);
+router.get(
+  "/:id",
+  authenticate,
+  userParamValidator("id"),
+  validate,
+  getTeamById,
+);
 
 // OB only routes
-router.post("/", authenticate, isOB, createTeamValidator(), validate, createTeam);
+router.post(
+  "/",
+  authenticate,
+  isOB,
+  createTeamValidator(),
+  validate,
+  createTeam,
+);
 router.patch(
   "/:id",
   authenticate,

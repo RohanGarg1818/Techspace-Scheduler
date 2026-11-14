@@ -1,0 +1,14 @@
+$kind: http-request
+description: Post a comment with empty content - should return 400 VALIDATION_ERROR. Uses announcementId.
+url: "{{baseUrl}}/announcements/{{announcementId}}/comments"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": ""
+    }
+order: 6000

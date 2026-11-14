@@ -19,24 +19,18 @@ export const createUserValidator = () => {
       .isEmail()
       .withMessage("Invalid email address"),
     body("password")
-      .trim()
       .notEmpty()
       .withMessage("Password is required")
       .isLength({ min: 8, max: 100 })
-      .withMessage("Password must be at least 8 characters"),
+      .withMessage("Password must be between 8 and 100 characters"),
     body("role")
       .trim()
       .notEmpty()
       .withMessage("Role is required")
       .isIn(AvailableUserRoles)
       .withMessage(`Role must be one of: ${AvailableUserRoles.join(", ")}`),
-    body("obTitle")
-      .optional({ nullable: true })
-      .trim(),
-    body("teams")
-      .optional()
-      .isArray()
-      .withMessage("teams must be an array"),
+    body("obTitle").optional({ nullable: true }).trim(),
+    body("teams").optional().isArray().withMessage("teams must be an array"),
     body("teams.*.teamId")
       .trim()
       .notEmpty()
@@ -70,11 +64,10 @@ export const updateUserValidator = () => {
       .withMessage("Invalid email address"),
     body("password")
       .optional()
-      .trim()
       .notEmpty()
       .withMessage("Password cannot be empty")
       .isLength({ min: 8, max: 100 })
-      .withMessage("Password must be at least 8 characters"),
+      .withMessage("Password must be between 8 and 100 characters"),
     body("role")
       .optional()
       .trim()
@@ -82,13 +75,8 @@ export const updateUserValidator = () => {
       .withMessage("Role cannot be empty")
       .isIn(AvailableUserRoles)
       .withMessage(`Role must be one of: ${AvailableUserRoles.join(", ")}`),
-    body("obTitle")
-      .optional({ nullable: true })
-      .trim(),
-    body("teams")
-      .optional()
-      .isArray()
-      .withMessage("teams must be an array"),
+    body("obTitle").optional({ nullable: true }).trim(),
+    body("teams").optional().isArray().withMessage("teams must be an array"),
     body("teams.*.teamId")
       .trim()
       .notEmpty()
@@ -123,9 +111,6 @@ export const getUsersQueryValidator = () => {
 
 export const userParamValidator = (paramName = "id") => {
   return [
-    param(paramName)
-      .trim()
-      .notEmpty()
-      .withMessage(`${paramName} is required`),
+    param(paramName).trim().notEmpty().withMessage(`${paramName} is required`),
   ];
 };

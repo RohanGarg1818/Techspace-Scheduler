@@ -1,0 +1,17 @@
+$kind: http-request
+description: Create team_lead without any lead/colead team - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/users"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Bad Lead",
+      "email": "badlead@techspace.com",
+      "password": "password123",
+      "role": "team_lead"
+    }
+order: 12000

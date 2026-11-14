@@ -1,0 +1,7 @@
+$kind: http-request
+description: Non-OB tries to delete a user - should return 403 FORBIDDEN. Login as member first.
+url: "{{baseUrl}}/users/{{userId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+order: 24000

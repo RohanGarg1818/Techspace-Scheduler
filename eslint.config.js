@@ -26,8 +26,8 @@ export default [
       "no-constant-condition": ["error", { checkLoops: false }],
 
       // Best Practices
-      "eqeqeq": ["error", "always"], // Require === and !==
-      "curly": ["error", "all"], // Require curly braces for all control statements
+      eqeqeq: ["error", "always"], // Require === and !==
+      curly: ["error", "all"], // Require curly braces for all control statements
       "no-eval": "error",
       "no-implied-eval": "error",
       "no-with": "error",
@@ -45,10 +45,10 @@ export default [
       "object-shorthand": ["warn", "always"],
 
       // Code Style (Consistency)
-      "semi": ["error", "always"],
-      "quotes": ["error", "double", { avoidEscape: true }],
+      semi: ["error", "always"],
+      quotes: ["error", "double", { avoidEscape: true }],
       "comma-dangle": ["error", "always-multiline"],
-      "indent": ["error", 2, { SwitchCase: 1 }],
+      indent: ["error", 2, { SwitchCase: 1 }],
       "linebreak-style": "off", // Allow both LF and CRLF (cross-platform)
       "space-before-function-paren": [
         "error",

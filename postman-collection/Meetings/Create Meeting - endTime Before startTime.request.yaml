@@ -1,0 +1,17 @@
+$kind: http-request
+description: endTime before startTime - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/meetings"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "topic": "Bad Times",
+      "date": "2026-12-01",
+      "startTime": "15:00",
+      "endTime": "14:00"
+    }
+order: 18000

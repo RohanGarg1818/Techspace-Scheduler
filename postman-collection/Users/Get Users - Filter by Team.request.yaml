@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get users belonging to a specific team. Replace teamId value with a real one from Get All Teams.
+url: "{{baseUrl}}/users?teamId={{teamId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 4000

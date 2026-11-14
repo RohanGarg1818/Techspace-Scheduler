@@ -17,10 +17,10 @@ export const createTeamValidator = () => {
       .notEmpty()
       .withMessage("Team type is required")
       .isIn(AvailableTeamTypes)
-      .withMessage(`Team type must be one of: ${AvailableTeamTypes.join(", ")}`),
-    body("description")
-      .optional({ nullable: true })
-      .trim(),
+      .withMessage(
+        `Team type must be one of: ${AvailableTeamTypes.join(", ")}`,
+      ),
+    body("description").optional({ nullable: true }).trim(),
   ];
 };
 
@@ -39,10 +39,10 @@ export const updateTeamValidator = () => {
       .notEmpty()
       .withMessage("Team type cannot be empty")
       .isIn(AvailableTeamTypes)
-      .withMessage(`Team type must be one of: ${AvailableTeamTypes.join(", ")}`),
-    body("description")
-      .optional({ nullable: true })
-      .trim(),
+      .withMessage(
+        `Team type must be one of: ${AvailableTeamTypes.join(", ")}`,
+      ),
+    body("description").optional({ nullable: true }).trim(),
   ];
 };
 
@@ -70,13 +70,7 @@ export const teamMemberValidator = () => {
 
 export const teamMemberParamsValidator = () => {
   return [
-    param("id")
-      .trim()
-      .notEmpty()
-      .withMessage("Team ID is required"),
-    param("userId")
-      .trim()
-      .notEmpty()
-      .withMessage("User ID is required"),
+    param("id").trim().notEmpty().withMessage("Team ID is required"),
+    param("userId").trim().notEmpty().withMessage("User ID is required"),
   ];
 };

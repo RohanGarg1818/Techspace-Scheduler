@@ -1,0 +1,14 @@
+$kind: http-request
+description: Non-creator non-OB tries to edit a meeting - should return 403 FORBIDDEN. Login as a different user. Uses meetingId.
+url: "{{baseUrl}}/meetings/{{meetingId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "note": "Trying to sneak an edit"
+    }
+order: 24000

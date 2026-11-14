@@ -1,0 +1,15 @@
+$kind: http-request
+description: Delete a comment (author or OB). If top-level, all replies are also deleted. Uses commentId. Clears commentId after success.
+url: "{{baseUrl}}/comments/{{commentId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 204) {
+          pm.collectionVariables.set('commentId', '');
+          console.log('Comment deleted, commentId cleared');
+      }
+    language: text/javascript
+order: 12000

@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get all comments on an announcement (paginated, chronological). Uses announcementId variable.
+url: "{{baseUrl}}/announcements/{{announcementId}}/comments?page=1&limit=20"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 1000

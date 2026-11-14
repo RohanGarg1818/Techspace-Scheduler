@@ -1,0 +1,16 @@
+$kind: http-request
+description: Create announcement with invalid priority value - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/announcements"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "title": "Bad Priority",
+      "content": "Some content here",
+      "priority": "critical"
+    }
+order: 9000

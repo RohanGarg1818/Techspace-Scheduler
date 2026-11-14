@@ -25,9 +25,7 @@ export const getAnnouncements = asyncHandler(async (req, res) => {
   }
 
   if (teamId) {
-    announcements = announcements.filter(
-      (a) => a.team && a.team.id === teamId,
-    );
+    announcements = announcements.filter((a) => a.team && a.team.id === teamId);
   }
 
   if (isPinned !== undefined) {
@@ -58,12 +56,11 @@ export const getAnnouncements = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        announcements: items,
         items,
         pagination: {
-          currentPage: parsedPage,
+          page: parsedPage,
           limit: parsedLimit,
-          totalAnnouncements: total,
+          total,
           totalPages,
           hasNextPage: parsedPage < totalPages,
           hasPreviousPage: parsedPage > 1,
@@ -85,13 +82,11 @@ export const getAnnouncementById = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Announcement not found");
   }
 
-  res.status(200).json(
-    new ApiResponse(
-      200,
-      announcement,
-      "Announcement fetched successfully",
-    ),
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, announcement, "Announcement fetched successfully"),
+    );
 });
 
 /**
@@ -102,14 +97,6 @@ export const createAnnouncement = asyncHandler(async (req, res) => {
 
   const isOB = req.user.role === UserRolesEnum.OB;
   const isTeamLead = req.user.role === UserRolesEnum.TEAM_LEAD;
-
-  if (!isOB && !isTeamLead) {
-    throw new ApiError(
-      403,
-      ErrorCodeEnum.FORBIDDEN,
-      "Only OBs and team leads can create announcements",
-    );
-  }
 
   let announcementType;
   let teamObj = null;
@@ -160,13 +147,15 @@ export const createAnnouncement = asyncHandler(async (req, res) => {
 
   await db.createAnnouncement(newAnnouncement);
 
-  res.status(201).json(
-    new ApiResponse(
-      201,
-      newAnnouncement,
-      "Announcement created successfully",
-    ),
-  );
+  res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        newAnnouncement,
+        "Announcement created successfully",
+      ),
+    );
 });
 
 /**
@@ -217,13 +206,15 @@ export const updateAnnouncement = asyncHandler(async (req, res) => {
 
   const updatedAnnouncement = await db.getAnnouncementById(id);
 
-  res.status(200).json(
-    new ApiResponse(
-      200,
-      updatedAnnouncement,
-      "Announcement updated successfully",
-    ),
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedAnnouncement,
+        "Announcement updated successfully",
+      ),
+    );
 });
 
 /**

@@ -1,0 +1,17 @@
+$kind: http-request
+description: Regular member tries to create a meeting - should return 403 FORBIDDEN. Login as riya first.
+url: "{{baseUrl}}/meetings"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "topic": "Sneaky Meeting",
+      "date": "2026-12-01",
+      "startTime": "10:00",
+      "endTime": "11:00"
+    }
+order: 20000

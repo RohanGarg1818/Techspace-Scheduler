@@ -1,0 +1,14 @@
+$kind: http-request
+description: Edit a cancelled meeting - should return 409 CONFLICT. Cancel meetingId first. Uses meetingId.
+url: "{{baseUrl}}/meetings/{{meetingId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "note": "Trying to edit cancelled meeting"
+    }
+order: 27000
