@@ -822,3 +822,175 @@ Errors:
 - `404 NOT_FOUND`: announcement doesn't exist.
 
 ---
+
+## 8. Comments
+
+Discussion and replies on announcements and meetings.
+
+### Who can do what
+
+| Action | ob | faculty | executive | team_lead | member |
+|---|---|---|---|---|---|
+| View comments | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Post comment | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Edit own comment | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Delete own comment | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Delete any comment (moderation) | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+---
+
+### Data shape: Comment
+
+| field | type | notes |
+|---|---|---|
+| id | string | UUID |
+| announcementId | string or null | UUID of the announcement (if commenting on an announcement) |
+| meetingId | string or null | UUID of the meeting (if commenting on a meeting) |
+| content | string | 1 to 1000 characters, trimmed |
+| parentCommentId | string or null | UUID of parent comment if replying in a thread, `null` for top-level comments |
+| createdBy | object | `{ id, name }`. **Set by server** from the token |
+| createdAt | string | ISO 8601 timestamp |
+| updatedAt | string or null | ISO 8601 timestamp, `null` until edited |
+
+```json
+{
+  "id": "c1",
+  "announcementId": "a1",
+  "meetingId": null,
+  "content": "Will the practice files be shared before Wednesday?",
+  "parentCommentId": null,
+  "createdBy": { "id": "u2", "name": "Riya Sharma" },
+  "createdAt": "2026-11-20T11:00:00Z",
+  "updatedAt": null
+}
+```
+
+---
+
+### Endpoints
+
+### GET `/announcements/:id/comments`
+
+Fetch all comments for an announcement.
+
+Query params (all optional):
+- `parentCommentId`: filter replies to a specific comment, or pass `"null"` for top-level comments only
+- `page`: default `1`
+- `limit`: default `20` (max `100`)
+
+boom: `GET /announcements/a1/comments?page=1&limit=20`
+
+Output `200`:
+```json
+{
+  "data": [
+    {
+      "id": "c1",
+      "announcementId": "a1",
+      "meetingId": null,
+      "content": "Will the practice files be shared before Wednesday?",
+      "parentCommentId": null,
+      "createdBy": { "id": "u2", "name": "Rohit Singh" },
+      "createdAt": "2026-11-20T11:00:00Z",
+      "updatedAt": null
+    },
+    {
+      "id": "c2",
+      "announcementId": "a1",
+      "meetingId": null,
+      "content": "Yes, we will push them to GitHub by Tuesday evening.",
+      "parentCommentId": "c1",
+      "createdBy": { "id": "u1", "name": "Priyanshu Yadav" },
+      "createdAt": "2026-11-20T11:30:00Z",
+      "updatedAt": null
+    }
+  ],
+  "pagination": { "page": 1, "limit": 20, "total": 2 }
+}
+```
+
+*Sorting order:* Comments are sorted chronologically by `createdAt ASC` so discussions read naturally from top to bottom.
+
+### GET `/comments/:id`
+
+boom: `GET /comments/c1`
+
+Output `200`: one **Comment**.  
+Errors: `404 NOT_FOUND` if the comment id does not exist.
+
+### POST `/announcements/:id/comments` (any logged-in user)
+
+Post a comment on an announcement.
+
+Input (top-level comment):
+```json
+{
+  "content": "Will the practice files be shared before Wednesday?"
+}
+```
+
+Input (reply to an existing comment):
+```json
+{
+  "content": "Yes, we will push them to GitHub by Tuesday evening.",
+  "parentCommentId": "c1"
+}
+```
+
+Rules:
+1. `content`: required, string, 1 to 1000 characters, trimmed.
+2. `parentCommentId`: optional string or `null`. If provided, must be the id of an existing comment on the same announcement.
+3. The parent announcement must exist.
+4. Any authenticated user can comment.
+
+Output `201`: the created **Comment**.
+
+Errors:
+- `400 VALIDATION_ERROR`: content missing, empty, or exceeds 1000 characters.
+- `401 UNAUTHENTICATED`: missing or invalid token.
+- `404 NOT_FOUND`: announcement or `parentCommentId` does not exist.
+
+### GET `/meetings/:id/comments`
+
+Fetch all comments for a meeting. Supports the same query parameters (`page`, `limit`, `parentCommentId`) and response structure as announcement comments.
+
+boom: `GET /meetings/m1/comments?page=1&limit=20`
+
+### POST `/meetings/:id/comments` (any logged-in user)
+
+Post a comment on a meeting. Same body structure as announcement comments (`content`, optional `parentCommentId`). Sets `meetingId` to the target meeting id and `announcementId` to `null`.
+
+Output `201`: the created **Comment**.
+
+### PATCH `/comments/:id` (creator only)
+
+Update a comment's content. Only the author can edit their own comment.
+
+Input:
+```json
+{
+  "content": "Will the practice files be shared before Tuesday evening?"
+}
+```
+
+Output `200`: updated **Comment** (with updated `updatedAt` timestamp).
+
+Errors:
+- `400 VALIDATION_ERROR`: content missing or invalid length.
+- `403 FORBIDDEN`: caller is not the author of this comment.
+- `404 NOT_FOUND`: comment doesn't exist.
+
+### DELETE `/comments/:id` (creator or ob)
+
+Delete a comment. Authors can delete their own comments; OBs can delete any comment for moderation.
+
+No input. Output `204` (empty).
+
+*Cascade / Threading rule:* Deleting a comment deletes its replies, or marks it as `"[deleted]"` if child replies exist to maintain thread continuity.
+
+Errors:
+- `403 FORBIDDEN`: caller is neither an OB nor the creator of this comment.
+- `404 NOT_FOUND`: comment doesn't exist.
+
+---
+
