@@ -30,11 +30,49 @@ this shi is ai generated but i designed the specs and schemas so they are good t
 | Create / edit / delete users, manage teams | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Change own password | ✅ | ✅ | ✅ | ✅ | ✅ |
 
+### Response format
+
+Every response except `204` is wrapped like this:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Success",
+  "data": {}
+}
+```
+
+| field | notes |
+|---|---|
+| success | `true` for status below 400, otherwise `false` |
+| statusCode | same number as the HTTP status |
+| message | `"Success"` by default, a short human-readable text on errors |
+| data | the actual payload (see below) |
+
+**Important: every "Output" example in this document shows only what goes inside `data`.** The server adds `success`, `statusCode` and `message` around it. Error examples are the exception and show the full body.
+
+What goes in `data`:
+- Single resource (a User, a Meeting, ...): `data` is the object itself.
+- Lists with paging (users, announcements, comments): `data` is `{ "items": [ ... ], "pagination": { "page", "limit", "total" } }`.
+- Lists without paging (teams, meetings): `data` is `{ "items": [ ... ] }`.
+- `204`: no body at all (deletes, change-password).
+
 ### Errors (same shape everywhere)
 
 ```json
-{ "error": { "code": "FORBIDDEN", "message": "Only OBs can do this" } }
+{
+  "success": false,
+  "statusCode": 403,
+  "message": "Only OBs can do this",
+  "error": { "code": "FORBIDDEN", "details": null },
+  "data": null
+}
 ```
+
+- `error.code` is one of the codes in the table below.
+- `error.details` is `null`, except for `VALIDATION_ERROR` where it is a list of `{ "field", "issue" }`.
+- `data` is `null` on errors, except `MEETING_CLASH` where it is `{ "clashes": [ ... ] }`.
 
 | HTTP | code | when |
 |---|---|---|
@@ -196,7 +234,7 @@ boom: `GET /users?role=team_lead&page=1&limit=20`
 Output `200`:
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "u1",
       "name": "Priyanshu Yadav",
@@ -270,21 +308,30 @@ Errors:
 - `400 VALIDATION_ERROR`: missing field, bad email, short password, bad role, or a cross-field rule broken
 ```json
 {
+  "success": false,
+  "statusCode": 400,
+  "message": "Invalid input",
   "error": {
     "code": "VALIDATION_ERROR",
-    "message": "Invalid input",
     "details": [
       { "field": "password", "issue": "Must be at least 8 characters" },
       { "field": "teams", "issue": "role team_lead needs at least one lead/colead team" }
     ]
-  }
+  },
+  "data": null
 }
 ```
 - `403 FORBIDDEN`: caller is not an OB
 - `404 NOT_FOUND`: a `teamId` doesn't exist
 - `409 CONFLICT`: email already used
 ```json
-{ "error": { "code": "CONFLICT", "message": "Email already in use" } }
+{
+  "success": false,
+  "statusCode": 409,
+  "message": "Email already in use",
+  "error": { "code": "CONFLICT", "details": null },
+  "data": null
+}
 ```
 
 ### PATCH `/users/:id` (ob only): update
@@ -348,6 +395,7 @@ No input. Output `204` (empty).
 How delete works: it is a **soft delete**. Set a `deletedAt` timestamp on the user instead of removing the row.
 - The user can no longer log in, and is hidden from `/users`, team member lists and the dashboard.
 - Their old meetings stay on the calendar and still show `createdBy` with their name. (A hard delete would break those meetings.)
+- Their comments and announcements also stay and still show their name.
 - They are removed from all teams.
 
 Errors:
@@ -355,7 +403,13 @@ Errors:
 - `404 NOT_FOUND`: user doesn't exist or is already deleted
 - `409 CONFLICT`: you cannot delete yourself, and you cannot delete the last remaining OB
 ```json
-{ "error": { "code": "CONFLICT", "message": "You cannot delete the last OB" } }
+{
+  "success": false,
+  "statusCode": 409,
+  "message": "You cannot delete the last OB",
+  "error": { "code": "CONFLICT", "details": null },
+  "data": null
+}
 ```
 
 ---
@@ -371,7 +425,7 @@ boom: `GET /teams?type=core`
 Output `200`:
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "t1",
       "name": "Tech Team",
@@ -505,7 +559,7 @@ boom: `GET /meetings?from=2026-11-01&to=2026-11-30`
 Output `200`:
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "m1",
       "type": "core",
@@ -605,24 +659,29 @@ Output `201`: the new **Meeting** (with `type`, `color`, `createdBy` filled in b
 Output `409`:
 ```json
 {
-  "error": { "code": "MEETING_CLASH", "message": "This overlaps with 1 meeting" },
-  "clashes": [
-    {
-      "id": "m7",
-      "type": "ob",
-      "color": "#1E3A8A",
-      "team": null,
-      "topic": "Monthly OB Sync",
-      "date": "2026-11-20",
-      "startTime": "15:30",
-      "endTime": "16:30",
-      "note": null,
-      "location": null,
-      "link": null,
-      "createdBy": { "id": "u9", "name": "Aman Verma" },
-      "status": "scheduled"
-    }
-  ]
+  "success": false,
+  "statusCode": 409,
+  "message": "This overlaps with 1 meeting",
+  "error": { "code": "MEETING_CLASH", "details": null },
+  "data": {
+    "clashes": [
+      {
+        "id": "m7",
+        "type": "ob",
+        "color": "#1E3A8A",
+        "team": null,
+        "topic": "Monthly OB Sync",
+        "date": "2026-11-20",
+        "startTime": "15:30",
+        "endTime": "16:30",
+        "note": null,
+        "location": null,
+        "link": null,
+        "createdBy": { "id": "u9", "name": "Aman Verma" },
+        "status": "scheduled"
+      }
+    ]
+  }
 }
 ```
 The frontend shows the warning. If the user says "create anyway", send the **same body** again to `POST /meetings?acknowledgeClash=true` and it saves.
@@ -649,11 +708,11 @@ Errors: `403` (not creator/ob), `404`, `409 MEETING_CLASH`, `409 CONFLICT` (meet
 
 No input.
 
-Output `200`: the **Meeting** with `"status": "cancelled"`. It stays in the database (soft cancel) so it can show as cancelled on the calendar.
+Output `200`: the **Meeting** with `"status": "cancelled"`. It stays in the database (soft cancel) so it can show as cancelled on the calendar. Its comments stay too.
 
 ### DELETE `/meetings/:id` (ob only)
 
-Permanently deletes. No input. Output `204`.
+Permanently deletes the meeting **and all comments on it**. No input. Output `204`.
 
 ---
 
@@ -726,7 +785,7 @@ boom: `GET /announcements?type=society&isPinned=true&page=1&limit=20`
 Output `200`:
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "a1",
       "type": "society",
@@ -813,7 +872,7 @@ Errors:
 
 ### DELETE `/announcements/:id` (creator or ob)
 
-Deletes an announcement.
+Permanently deletes the announcement **and all comments on it**.
 
 No input. Output `204` (empty).
 
@@ -847,10 +906,14 @@ Discussion and replies on announcements and meetings.
 | announcementId | string or null | UUID of the announcement (if commenting on an announcement) |
 | meetingId | string or null | UUID of the meeting (if commenting on a meeting) |
 | content | string | 1 to 1000 characters, trimmed |
-| parentCommentId | string or null | UUID of parent comment if replying (must be a top-level comment), `null` for top-level comments |
+| parentCommentId | string or null | UUID of the top-level comment this replies to, `null` for top-level comments |
 | createdBy | object | `{ id, name }`. **Set by server** from the token |
 | createdAt | string | ISO 8601 timestamp |
 | updatedAt | string or null | ISO 8601 timestamp, `null` until edited |
+
+Rules for the shape:
+- **Exactly one** of `announcementId` and `meetingId` is set, the other is `null`.
+- Threads are **one level deep**: a reply (`parentCommentId` set) cannot itself be replied to. Replies always point to a top-level comment.
 
 ```json
 {
@@ -883,14 +946,14 @@ boom: `GET /announcements/a1/comments?page=1&limit=20`
 Output `200`:
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "c1",
       "announcementId": "a1",
       "meetingId": null,
       "content": "Will the practice files be shared before Wednesday?",
       "parentCommentId": null,
-      "createdBy": { "id": "u2", "name": "Rohit Singh" },
+      "createdBy": { "id": "u2", "name": "Riya Sharma" },
       "createdAt": "2026-11-20T11:00:00Z",
       "updatedAt": null
     },
@@ -910,6 +973,8 @@ Output `200`:
 ```
 
 *Sorting order:* Comments are sorted chronologically by `createdAt ASC` so discussions read naturally from top to bottom.
+
+Errors: `404 NOT_FOUND` if the announcement does not exist.
 
 ### GET `/comments/:id`
 
@@ -939,14 +1004,14 @@ Input (reply to an existing comment):
 
 Rules:
 1. `content`: required, string, 1 to 1000 characters, trimmed.
-2. `parentCommentId`: optional string or `null`. If provided, it must be the id of an existing **top-level** comment (`parentCommentId === null`) on the same announcement. Replying to a reply is not allowed (strict 1-level reply nesting).
+2. `parentCommentId`: optional string or `null`. If provided, must be the id of an existing **top-level** comment on the same announcement. Replying to a reply returns `400 VALIDATION_ERROR`.
 3. The parent announcement must exist.
 4. Any authenticated user can comment.
 
 Output `201`: the created **Comment**.
 
 Errors:
-- `400 VALIDATION_ERROR`: content missing, empty, exceeds 1000 characters, or attempting to reply to a reply (depth limit exceeded).
+- `400 VALIDATION_ERROR`: content missing, empty, or exceeds 1000 characters, or `parentCommentId` points to a reply.
 - `401 UNAUTHENTICATED`: missing or invalid token.
 - `404 NOT_FOUND`: announcement or `parentCommentId` does not exist.
 
@@ -958,7 +1023,7 @@ boom: `GET /meetings/m1/comments?page=1&limit=20`
 
 ### POST `/meetings/:id/comments` (any logged-in user)
 
-Post a comment on a meeting. Same body structure as announcement comments (`content`, optional `parentCommentId`). Sets `meetingId` to the target meeting id and `announcementId` to `null`.
+Post a comment on a meeting. Same body structure and rules as announcement comments (`content`, optional `parentCommentId`). Sets `meetingId` to the target meeting id and `announcementId` to `null`. Comments are allowed on cancelled meetings too.
 
 Output `201`: the created **Comment**.
 
@@ -986,11 +1051,10 @@ Delete a comment. Authors can delete their own comments; OBs can delete any comm
 
 No input. Output `204` (empty).
 
-*Cascade rule:* Permanently hard deletes the comment. Deleting a top-level comment permanently cascade-deletes all its child replies.
+*Delete rule:* this is a **hard delete**. The comment is removed permanently. Deleting a top-level comment also permanently deletes all of its replies. Deleting a reply removes only that reply.
 
 Errors:
 - `403 FORBIDDEN`: caller is neither an OB nor the creator of this comment.
 - `404 NOT_FOUND`: comment doesn't exist.
 
 ---
-
