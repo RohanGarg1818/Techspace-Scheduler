@@ -61,6 +61,34 @@ What goes in `data`:
 - Lists without paging (teams, meetings): `data` is `{ "items": [ ... ] }`.
 - `204`: no body at all (deletes, change-password).
 
+### Response format
+
+Every response except `204` is wrapped like this:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Success",
+  "data": {}
+}
+```
+
+| field | notes |
+|---|---|
+| success | `true` for status below 400, otherwise `false` |
+| statusCode | same number as the HTTP status |
+| message | `"Success"` by default, a short human-readable text on errors |
+| data | the actual payload (see below) |
+
+**Important: every "Output" example in this document shows only what goes inside `data`.** The server adds `success`, `statusCode` and `message` around it. Error examples are the exception and show the full body.
+
+What goes in `data`:
+- Single resource (a User, a Meeting, ...): `data` is the object itself.
+- Lists with paging (users, announcements, comments): `data` is `{ "items": [ ... ], "pagination": { "page", "limit", "total" } }`.
+- Lists without paging (teams, meetings): `data` is `{ "items": [ ... ] }`.
+- `204`: no body at all (deletes, change-password).
+
 ### Errors (same shape everywhere)
 
 ```json
@@ -77,6 +105,7 @@ What goes in `data`:
 - `error.details` is `null`, except for `VALIDATION_ERROR` where it is a list of `{ "field", "issue" }`.
 - `data` is `null` on errors, except `MEETING_CLASH` where it is `{ "clashes": [ ... ] }`.
 
+<<<<<<< HEAD
 | HTTP | code               | when                                    |
 | ---- | ------------------ | --------------------------------------- |
 | 400  | `VALIDATION_ERROR` | bad/missing field                       |
@@ -85,6 +114,16 @@ What goes in `data`:
 | 404  | `NOT_FOUND`        | id doesn't exist                        |
 | 409  | `MEETING_CLASH`    | meeting overlaps another (see Meetings) |
 | 409  | `CONFLICT`         | duplicate email, etc.                   |
+=======
+| HTTP | code | when |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | bad/missing field |
+| 401 | `UNAUTHENTICATED` | no token / wrong login |
+| 403 | `FORBIDDEN` | role not allowed |
+| 404 | `NOT_FOUND` | id doesn't exist |
+| 409 | `MEETING_CLASH` | meeting overlaps another (see Meetings) |
+| 409 | `CONFLICT` | duplicate email, etc. |
+>>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
 
 ---
 
@@ -958,6 +997,7 @@ Discussion and replies on announcements and meetings.
 
 ### Data shape: Comment
 
+<<<<<<< HEAD
 | field           | type           | notes                                                                        |
 | --------------- | -------------- | ---------------------------------------------------------------------------- |
 | id              | string         | UUID                                                                         |
@@ -971,6 +1011,22 @@ Discussion and replies on announcements and meetings.
 
 Rules for the shape:
 
+- **Exactly one** of `announcementId` and `meetingId` is set, the other is `null`.
+- Threads are **one level deep**: a reply (`parentCommentId` set) cannot itself be replied to. Replies always point to a top-level comment.
+=======
+| field | type | notes |
+|---|---|---|
+| id | string | UUID |
+| announcementId | string or null | UUID of the announcement (if commenting on an announcement) |
+| meetingId | string or null | UUID of the meeting (if commenting on a meeting) |
+| content | string | 1 to 1000 characters, trimmed |
+| parentCommentId | string or null | UUID of the top-level comment this replies to, `null` for top-level comments |
+| createdBy | object | `{ id, name }`. **Set by server** from the token |
+| createdAt | string | ISO 8601 timestamp |
+| updatedAt | string or null | ISO 8601 timestamp, `null` until edited |
+>>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
+
+Rules for the shape:
 - **Exactly one** of `announcementId` and `meetingId` is set, the other is `null`.
 - Threads are **one level deep**: a reply (`parentCommentId` set) cannot itself be replied to. Replies always point to a top-level comment.
 
@@ -1037,6 +1093,8 @@ _Sorting order:_ Comments are sorted chronologically by `createdAt ASC` so discu
 
 Errors: `404 NOT_FOUND` if the announcement does not exist.
 
+Errors: `404 NOT_FOUND` if the announcement does not exist.
+
 ### GET `/comments/:id`
 
 boom: `GET /comments/c1`
@@ -1075,7 +1133,10 @@ Rules:
 Output `201`: the created **Comment**.
 
 Errors:
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
 - `400 VALIDATION_ERROR`: content missing, empty, or exceeds 1000 characters, or `parentCommentId` points to a reply.
 - `401 UNAUTHENTICATED`: missing or invalid token.
 - `404 NOT_FOUND`: announcement or `parentCommentId` does not exist.
@@ -1118,7 +1179,11 @@ Delete a comment. Authors can delete their own comments; OBs can delete any comm
 
 No input. Output `204` (empty).
 
+<<<<<<< HEAD
 _Delete rule:_ this is a **hard delete**. The comment is removed permanently. Deleting a top-level comment also permanently deletes all of its replies. Deleting a reply removes only that reply.
+=======
+*Delete rule:* this is a **hard delete**. The comment is removed permanently. Deleting a top-level comment also permanently deletes all of its replies. Deleting a reply removes only that reply.
+>>>>>>> 3076af7ee95600bb3274112b742054c38daf4455
 
 Errors:
 
