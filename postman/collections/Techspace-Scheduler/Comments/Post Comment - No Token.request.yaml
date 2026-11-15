@@ -1,0 +1,13 @@
+$kind: http-request
+description: Post a comment without authentication - should return 401 UNAUTHENTICATED. Uses announcementId.
+url: "{{baseUrl}}/announcements/{{announcementId}}/comments"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Anonymous attempt"
+    }
+order: 18000

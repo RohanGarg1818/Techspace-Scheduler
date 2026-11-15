@@ -1,0 +1,5 @@
+$kind: http-request
+description: Test without token - should return 401
+url: "{{baseUrl}}/auth/me"
+method: GET
+order: 6000

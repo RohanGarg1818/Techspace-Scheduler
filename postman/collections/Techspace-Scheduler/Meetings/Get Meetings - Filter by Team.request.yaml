@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get meetings for a specific team. Uses teamId variable.
+url: "{{baseUrl}}/meetings?from=2026-11-01&to=2026-11-30&teamId={{teamId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 3000

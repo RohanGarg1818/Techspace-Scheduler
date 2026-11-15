@@ -1,0 +1,18 @@
+$kind: http-request
+description: Create meeting with an invalid link value - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/meetings"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "topic": "Bad Link Meeting",
+      "date": "2026-12-10",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "link": "not-a-url"
+    }
+order: 30000

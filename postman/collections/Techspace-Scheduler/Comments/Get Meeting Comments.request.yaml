@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get all comments on a meeting (paginated). Uses meetingId variable.
+url: "{{baseUrl}}/meetings/{{meetingId}}/comments?page=1&limit=20"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 14000

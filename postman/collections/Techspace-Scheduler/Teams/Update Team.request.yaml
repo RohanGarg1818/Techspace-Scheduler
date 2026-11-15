@@ -1,0 +1,14 @@
+$kind: http-request
+description: Update a team's description (OB only). Uses teamId variable.
+url: "{{baseUrl}}/teams/{{teamId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "description": "Updated team description"
+    }
+order: 10000

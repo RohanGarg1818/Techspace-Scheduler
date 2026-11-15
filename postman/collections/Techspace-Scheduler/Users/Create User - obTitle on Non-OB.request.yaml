@@ -1,0 +1,18 @@
+$kind: http-request
+description: Create member with obTitle set - should return 400 VALIDATION_ERROR
+url: "{{baseUrl}}/users"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Bad OBTitle",
+      "email": "badob@techspace.com",
+      "password": "password123",
+      "role": "member",
+      "obTitle": "President"
+    }
+order: 13000

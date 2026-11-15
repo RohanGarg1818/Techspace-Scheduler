@@ -1,0 +1,18 @@
+$kind: http-request
+description: Create a team lead user. teamId must be a valid team ID (run Get All Teams first and set teamId variable).
+url: "{{baseUrl}}/users"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "New Team Lead",
+      "email": "newlead@techspace.com",
+      "password": "password123",
+      "role": "team_lead",
+      "teams": [{ "teamId": "{{teamId}}", "position": "lead" }]
+    }
+order: 9000

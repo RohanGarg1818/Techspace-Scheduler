@@ -1,0 +1,7 @@
+$kind: http-request
+description: Delete a non-existent user - should return 404 NOT_FOUND
+url: "{{baseUrl}}/users/00000000-0000-0000-0000-000000000000"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+order: 23000

@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get currently logged-in user details. Token must be set from login.
+url: "{{baseUrl}}/auth/me"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 5000

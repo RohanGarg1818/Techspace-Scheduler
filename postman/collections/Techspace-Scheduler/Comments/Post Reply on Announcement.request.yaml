@@ -1,0 +1,15 @@
+$kind: http-request
+description: Post a reply to an existing comment on an announcement. Uses announcementId and commentId (parent).
+url: "{{baseUrl}}/announcements/{{announcementId}}/comments"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Yes, we will push them to GitHub by Tuesday evening.",
+      "parentCommentId": "{{commentId}}"
+    }
+order: 4000

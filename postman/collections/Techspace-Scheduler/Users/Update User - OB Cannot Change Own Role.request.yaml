@@ -1,0 +1,14 @@
+$kind: http-request
+description: OB tries to change their own role - should return 403 FORBIDDEN. Must be logged in as OB (aman).
+url: "{{baseUrl}}/users/{{userId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "role": "member"
+    }
+order: 19000

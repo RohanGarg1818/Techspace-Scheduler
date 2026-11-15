@@ -1,0 +1,15 @@
+$kind: http-request
+description: Permanently delete a meeting and all its comments (OB only). Uses meetingId. Clears meetingId after success.
+url: "{{baseUrl}}/meetings/{{meetingId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 204) {
+          pm.collectionVariables.set('meetingId', '');
+          console.log('Meeting deleted, meetingId cleared');
+      }
+    language: text/javascript
+order: 28000

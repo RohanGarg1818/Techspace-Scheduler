@@ -1,0 +1,15 @@
+$kind: http-request
+description: Try to reply to a reply (3-level nesting) - should return 400 VALIDATION_ERROR. Set commentId to a reply's ID first.
+url: "{{baseUrl}}/announcements/{{announcementId}}/comments"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "Trying to nest too deep",
+      "parentCommentId": "{{commentId}}"
+    }
+order: 5000

@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get all announcements (paginated, pinned first)
+url: "{{baseUrl}}/announcements?page=1&limit=20"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 1000

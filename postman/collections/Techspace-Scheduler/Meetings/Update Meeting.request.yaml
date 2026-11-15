@@ -1,0 +1,16 @@
+$kind: http-request
+description: Update a meeting's time (creator or OB). Uses meetingId variable.
+url: "{{baseUrl}}/meetings/{{meetingId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "startTime": "16:00",
+      "endTime": "17:00",
+      "location": "Room 305"
+    }
+order: 21000

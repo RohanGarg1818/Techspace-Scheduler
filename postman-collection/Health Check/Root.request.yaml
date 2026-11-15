@@ -1,5 +1,5 @@
 $kind: http-request
 description: Simple health check endpoint
-url: http://localhost:8000/
+url: https://techspace-scheduler.vercel.app/
 method: GET
 order: 1000
