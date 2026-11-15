@@ -1,32 +1,100 @@
 # Techspace Scheduler — API Reference
 
 A meeting calendar and coordination backend for a tech society.
-
 ---
 
 ## Contents
 
-1. [Running the server](#running-the-server)
-2. [Basics](#basics)
-3. [Roles and permissions](#roles-and-permissions)
-4. [Response envelope](#response-envelope)
-5. [Error format](#error-format)
-6. [Data shapes](#data-shapes)
-7. [Auth routes](#auth-routes)
-8. [User routes](#user-routes)
-9. [Team routes](#team-routes)
-10. [Dashboard route](#dashboard-route)
-11. [Meeting routes](#meeting-routes)
-12. [Announcement routes](#announcement-routes)
-13. [Comment routes](#comment-routes)
-14. [Seed credentials](#seed-credentials)
+1. [Setup & Installation](#setup--installation)
+2. [Database Setup](#database-setup)
+3. [Running the server](#running-the-server)
+4. [Basics](#basics)
+5. [Roles and permissions](#roles-and-permissions)
+6. [Response envelope](#response-envelope)
+7. [Error format](#error-format)
+8. [Data shapes](#data-shapes)
+9. [Auth routes](#auth-routes)
+10. [User routes](#user-routes)
+11. [Team routes](#team-routes)
+12. [Dashboard route](#dashboard-route)
+13. [Meeting routes](#meeting-routes)
+14. [Tentative Meeting routes](#tentative-meeting-routes)
+15. [Announcement routes](#announcement-routes)
+16. [Comment routes](#comment-routes)
+17. [Seed credentials](#seed-credentials)
 
 ---
+
+## Setup & Installation
+
+### Prerequisites
+- Node.js 18+ (tested on v20+)
+- PostgreSQL 14+ database
+- npm or yarn package manager
+
+### 1. Clone and Install
+
+### 2. Environment Configuration
+
+Create a `.env` file in the project root:
+
+```env
+# Server
+PORT=8000
+CORS_ORIGIN=http://localhost:5173
+
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_EXPIRES_IN=7d
+
+# Database
+DATABASE_URL=postgresql://username:password@localhost:5432/techspace
+# For local dev without SSL:
+DATABASE_SSL=false
+
+# Environment
+NODE_ENV=development
+```
+
+**Security Note**: Change `JWT_SECRET` to a strong random string in production. Generate one with:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+---
+
+## Database Setup
+
+```bash
+export DATABASE_URL="postgresql://user:pass@host:5432/dbname?sslmode=require"
+
+# 2. Run migrations
+npm run migrate
+
+# 3. Create your first OB user
+npm run createob
+
+# 4. Start server
+npm start
+```
+
+### Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server with nodemon (auto-restart) |
+| `npm start` | Start production server |
+| `npm run migrate` | Run database migrations (idempotent, safe to re-run) |
+| `npm run seed` | Seed database with test data (dev only, skips if data exists) |
+| `npm run createob` | Interactive script to create an Office Bearer user |
+| `npm run lint` | Run ESLint |
+| `npm run format` | Format code with Prettier |
+
 
 ## Running the server
 
 ```bash
-# development (nodemon)
+# development (nodemon with auto-restart)
 npm run dev
 
 # production
@@ -35,18 +103,23 @@ npm start
 
 Default port is `8000`. Set `PORT` in `.env` to override.
 
+**Health Check:**
+```bash
+curl http://localhost:8000/api/v1/healthcheck
+```
+
 ---
 
 ## Basics
 
-| Item | Value |
-|---|---|
-| Base URL | `/api/v1` |
-| Content type | `application/json` |
-| Auth header | `Authorization: Bearer <token>` |
-| Date format | `YYYY-MM-DD` (e.g. `2026-11-20`) |
-| Time format | `HH:mm` 24-hour (e.g. `15:30`) |
-| IDs | UUID strings |
+| Item         | Value                            |
+| ------------ | -------------------------------- |
+| Base URL     | `/api/v1`                        |
+| Content type | `application/json`               |
+| Auth header  | `Authorization: Bearer <token>`  |
+| Date format  | `YYYY-MM-DD` (e.g. `2026-11-20`) |
+| Time format  | `HH:mm` 24-hour (e.g. `15:30`)   |
+| IDs          | UUID strings                     |
 
 Every route except `POST /auth/login` requires a valid JWT token in the `Authorization` header. Any protected route returns `401 UNAUTHENTICATED` when the token is missing, invalid, expired, or was issued before a password change. Tokens expire after **7 days**.
 
@@ -54,29 +127,29 @@ Every route except `POST /auth/login` requires a valid JWT token in the `Authori
 
 ## Roles and permissions
 
-| Role | Description |
-|---|---|
-| `ob` | Office Bearer — full admin |
-| `faculty` | Faculty coordinator — view only |
-| `executive` | Executive — view only |
+| Role        | Description                          |
+| ----------- | ------------------------------------ |
+| `ob`        | Office Bearer — full admin           |
+| `faculty`   | Faculty coordinator — view only      |
+| `executive` | Executive — view only                |
 | `team_lead` | Lead or co-lead of one or more teams |
-| `member` | General member — view only |
+| `member`    | General member — view only           |
 
 **Global permission matrix**
 
-| Action | ob | faculty | executive | team_lead | member |
-|---|---|---|---|---|---|
-| View everything | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Create / edit / delete users | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Manage teams | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Create meeting | ✅ | ❌ | ❌ | ✅ own team only | ❌ |
-| Edit / cancel meeting | ✅ any | ❌ | ❌ | ✅ own creations | ❌ |
-| Delete meeting permanently | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Create announcement | ✅ | ❌ | ❌ | ✅ own team only | ❌ |
-| Edit / delete announcement | ✅ any | ❌ | ❌ | ✅ own creations | ❌ |
-| Post / edit / delete own comment | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Delete any comment (moderation) | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Change own password | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Action                           | ob     | faculty | executive | team_lead        | member |
+| -------------------------------- | ------ | ------- | --------- | ---------------- | ------ |
+| View everything                  | ✅     | ✅      | ✅        | ✅               | ✅     |
+| Create / edit / delete users     | ✅     | ❌      | ❌        | ❌               | ❌     |
+| Manage teams                     | ✅     | ❌      | ❌        | ❌               | ❌     |
+| Create meeting                   | ✅     | ❌      | ❌        | ✅ own team only | ❌     |
+| Edit / cancel meeting            | ✅ any | ❌      | ❌        | ✅ own creations | ❌     |
+| Delete meeting permanently       | ✅     | ❌      | ❌        | ❌               | ❌     |
+| Create announcement              | ✅     | ❌      | ❌        | ✅ own team only | ❌     |
+| Edit / delete announcement       | ✅ any | ❌      | ❌        | ✅ own creations | ❌     |
+| Post / edit / delete own comment | ✅     | ✅      | ✅        | ✅               | ✅     |
+| Delete any comment (moderation)  | ✅     | ❌      | ❌        | ❌               | ❌     |
+| Change own password              | ✅     | ✅      | ✅        | ✅               | ✅     |
 
 ---
 
@@ -89,7 +162,7 @@ Every response with a body is wrapped in this shape:
   "success": true,
   "statusCode": 200,
   "message": "Success",
-  "data": { }
+  "data": {}
 }
 ```
 
@@ -136,14 +209,14 @@ What goes in `data`:
 
 **Error codes**
 
-| HTTP | code | when |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Missing or invalid field |
-| 401 | `UNAUTHENTICATED` | No token, bad token, or wrong password |
-| 403 | `FORBIDDEN` | Role not allowed |
-| 404 | `NOT_FOUND` | Resource doesn't exist |
-| 409 | `CONFLICT` | Duplicate email, delete self, last OB, etc. |
-| 409 | `MEETING_CLASH` | Meeting time overlaps an existing scheduled meeting |
+| HTTP | code               | when                                                |
+| ---- | ------------------ | --------------------------------------------------- |
+| 400  | `VALIDATION_ERROR` | Missing or invalid field                            |
+| 401  | `UNAUTHENTICATED`  | No token, bad token, or wrong password              |
+| 403  | `FORBIDDEN`        | Role not allowed                                    |
+| 404  | `NOT_FOUND`        | Resource doesn't exist                              |
+| 409  | `CONFLICT`         | Duplicate email, delete self, last OB, etc.         |
+| 409  | `MEETING_CLASH`    | Meeting time overlaps an existing scheduled meeting |
 
 For `MEETING_CLASH`, `data` is not null — it contains `{ "clashes": [ <Meeting>, ... ] }`.
 
@@ -160,9 +233,7 @@ For `MEETING_CLASH`, `data` is not null — it contains `{ "clashes": [ <Meeting
   "email": "priyanshu@techspace.com",
   "role": "team_lead",
   "obTitle": null,
-  "teams": [
-    { "teamId": "uuid", "teamName": "Tech Team", "position": "lead" }
-  ]
+  "teams": [{ "teamId": "uuid", "teamName": "Tech Team", "position": "lead" }]
 }
 ```
 
@@ -212,12 +283,12 @@ The detail view (`GET /teams/:id`) adds a `members` array:
 }
 ```
 
-| Field | Notes |
-|---|---|
-| `type` | Set by server: `"ob"` / `"core"` / `"subclub"` |
-| `color` | Set by server: ob = `#1E3A8A`, core = `#0D9488`, subclub = `#7C3AED` |
-| `team` | `null` for OB meetings |
-| `status` | `"scheduled"` or `"cancelled"` |
+| Field    | Notes                                                                |
+| -------- | -------------------------------------------------------------------- |
+| `type`   | Set by server: `"ob"` / `"core"` / `"subclub"`                       |
+| `color`  | Set by server: ob = `#1E3A8A`, core = `#0D9488`, subclub = `#7C3AED` |
+| `team`   | `null` for OB meetings                                               |
+| `status` | `"scheduled"` or `"cancelled"`                                       |
 
 ### Announcement
 
@@ -268,10 +339,10 @@ Public. No token required.
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `email` | string | ✅ | Case-insensitive |
-| `password` | string | ✅ | |
+| Field      | Type   | Required | Notes            |
+| ---------- | ------ | -------- | ---------------- |
+| `email`    | string | ✅       | Case-insensitive |
+| `password` | string | ✅       |                  |
 
 **200 OK**
 
@@ -284,10 +355,10 @@ Public. No token required.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Missing email or password, or invalid email format |
-| 401 | `UNAUTHENTICATED` | Email not found or wrong password |
+| Status | Code               | Reason                                             |
+| ------ | ------------------ | -------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Missing email or password, or invalid email format |
+| 401    | `UNAUTHENTICATED`  | Email not found or wrong password                  |
 
 ---
 
@@ -301,9 +372,9 @@ Returns the currently authenticated user.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 401 | `UNAUTHENTICATED` | No / invalid / expired token |
+| Status | Code              | Reason                       |
+| ------ | ----------------- | ---------------------------- |
+| 401    | `UNAUTHENTICATED` | No / invalid / expired token |
 
 ---
 
@@ -313,10 +384,10 @@ Returns the currently authenticated user.
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `currentPassword` | string | ✅ | Must match the stored password |
-| `newPassword` | string | ✅ | Min 8 characters, max 100 |
+| Field             | Type   | Required | Notes                          |
+| ----------------- | ------ | -------- | ------------------------------ |
+| `currentPassword` | string | ✅       | Must match the stored password |
+| `newPassword`     | string | ✅       | Min 8 characters, max 100      |
 
 **204 No Content** on success.
 
@@ -324,10 +395,10 @@ After a successful password change, all previously issued tokens for this user b
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | `newPassword` under 8 characters, or either field missing |
-| 401 | `UNAUTHENTICATED` | `currentPassword` is wrong |
+| Status | Code               | Reason                                                    |
+| ------ | ------------------ | --------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | `newPassword` under 8 characters, or either field missing |
+| 401    | `UNAUTHENTICATED`  | `currentPassword` is wrong                                |
 
 ---
 
@@ -339,13 +410,13 @@ After a successful password change, all previously issued tokens for this user b
 
 **Query parameters**
 
-| Param | Type | Required | Notes |
-|---|---|---|---|
-| `role` | string | ❌ | Filter by role: `ob`, `faculty`, `executive`, `team_lead`, `member` |
-| `teamId` | string | ❌ | Filter users who belong to this team |
-| `q` | string | ❌ | Search by name or email (case-insensitive substring) |
-| `page` | integer | ❌ | Default `1` |
-| `limit` | integer | ❌ | Default `20`, max `100` |
+| Param    | Type    | Required | Notes                                                               |
+| -------- | ------- | -------- | ------------------------------------------------------------------- |
+| `role`   | string  | ❌       | Filter by role: `ob`, `faculty`, `executive`, `team_lead`, `member` |
+| `teamId` | string  | ❌       | Filter users who belong to this team                                |
+| `q`      | string  | ❌       | Search by name or email (case-insensitive substring)                |
+| `page`   | integer | ❌       | Default `1`                                                         |
+| `limit`  | integer | ❌       | Default `20`, max `100`                                             |
 
 **200 OK** — paginated list.
 
@@ -360,9 +431,9 @@ Soft-deleted users never appear.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Invalid `role`, `page`, or `limit` value |
+| Status | Code               | Reason                                   |
+| ------ | ------------------ | ---------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Invalid `role`, `page`, or `limit` value |
 
 ---
 
@@ -376,9 +447,9 @@ Soft-deleted users never appear.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 404 | `NOT_FOUND` | User not found or soft-deleted |
+| Status | Code        | Reason                         |
+| ------ | ----------- | ------------------------------ |
+| 404    | `NOT_FOUND` | User not found or soft-deleted |
 
 ---
 
@@ -388,14 +459,14 @@ Soft-deleted users never appear.
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `name` | string | ✅ | 1–100 characters, trimmed |
-| `email` | string | ✅ | Valid email, stored lowercase, must be unique |
-| `password` | string | ✅ | Min 8 characters, max 100; stored as bcrypt hash |
-| `role` | string | ✅ | One of: `ob`, `faculty`, `executive`, `team_lead`, `member` |
-| `obTitle` | string | ❌ | Only allowed when `role` is `ob` (e.g. `"President"`) |
-| `teams` | array | ❌ | Array of `{ "teamId": "uuid", "position": "lead" \| "colead" \| "member" }` |
+| Field      | Type   | Required | Notes                                                                       |
+| ---------- | ------ | -------- | --------------------------------------------------------------------------- |
+| `name`     | string | ✅       | 1–100 characters, trimmed                                                   |
+| `email`    | string | ✅       | Valid email, stored lowercase, must be unique                               |
+| `password` | string | ✅       | Min 8 characters, max 100; stored as bcrypt hash                            |
+| `role`     | string | ✅       | One of: `ob`, `faculty`, `executive`, `team_lead`, `member`                 |
+| `obTitle`  | string | ❌       | Only allowed when `role` is `ob` (e.g. `"President"`)                       |
+| `teams`    | array  | ❌       | Array of `{ "teamId": "uuid", "position": "lead" \| "colead" \| "member" }` |
 
 **Cross-field rules** (all validated server-side):
 
@@ -408,12 +479,12 @@ Soft-deleted users never appear.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Missing field, bad email, short password, bad role, or cross-field rule broken |
-| 403 | `FORBIDDEN` | Caller is not an OB |
-| 404 | `NOT_FOUND` | A `teamId` in `teams` does not exist |
-| 409 | `CONFLICT` | Email already in use |
+| Status | Code               | Reason                                                                         |
+| ------ | ------------------ | ------------------------------------------------------------------------------ |
+| 400    | `VALIDATION_ERROR` | Missing field, bad email, short password, bad role, or cross-field rule broken |
+| 403    | `FORBIDDEN`        | Caller is not an OB                                                            |
+| 404    | `NOT_FOUND`        | A `teamId` in `teams` does not exist                                           |
+| 409    | `CONFLICT`         | Email already in use                                                           |
 
 ---
 
@@ -425,14 +496,14 @@ Soft-deleted users never appear.
 
 **Body** — send only the fields you want to change. At least one field is required.
 
-| Field | Type | Notes |
-|---|---|---|
-| `name` | string | 1–100 characters |
-| `email` | string | Valid email, must be unique |
-| `password` | string | Min 8 characters; stored as a new bcrypt hash |
-| `role` | string | One of the valid roles |
-| `obTitle` | string / null | Only valid for `role = "ob"` |
-| `teams` | array | Fully **replaces** the user's team list. Send `[]` to remove from all teams. |
+| Field      | Type          | Notes                                                                        |
+| ---------- | ------------- | ---------------------------------------------------------------------------- |
+| `name`     | string        | 1–100 characters                                                             |
+| `email`    | string        | Valid email, must be unique                                                  |
+| `password` | string        | Min 8 characters; stored as a new bcrypt hash                                |
+| `role`     | string        | One of the valid roles                                                       |
+| `obTitle`  | string / null | Only valid for `role = "ob"`                                                 |
+| `teams`    | array         | Fully **replaces** the user's team list. Send `[]` to remove from all teams. |
 
 **Important behaviours:**
 
@@ -445,12 +516,12 @@ Soft-deleted users never appear.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | No fields sent, invalid value, or cross-field rule broken |
-| 403 | `FORBIDDEN` | Caller is not an OB, or OB is trying to change their own role |
-| 404 | `NOT_FOUND` | User or a `teamId` doesn't exist |
-| 409 | `CONFLICT` | Email taken, or demoting the last OB |
+| Status | Code               | Reason                                                        |
+| ------ | ------------------ | ------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | No fields sent, invalid value, or cross-field rule broken     |
+| 403    | `FORBIDDEN`        | Caller is not an OB, or OB is trying to change their own role |
+| 404    | `NOT_FOUND`        | User or a `teamId` doesn't exist                              |
+| 409    | `CONFLICT`         | Email taken, or demoting the last OB                          |
 
 ---
 
@@ -468,11 +539,11 @@ The user is automatically removed from all teams on deletion.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 403 | `FORBIDDEN` | Caller is not an OB |
-| 404 | `NOT_FOUND` | User not found or already deleted |
-| 409 | `CONFLICT` | Cannot delete yourself, or deleting the last OB |
+| Status | Code        | Reason                                          |
+| ------ | ----------- | ----------------------------------------------- |
+| 403    | `FORBIDDEN` | Caller is not an OB                             |
+| 404    | `NOT_FOUND` | User not found or already deleted               |
+| 409    | `CONFLICT`  | Cannot delete yourself, or deleting the last OB |
 
 ---
 
@@ -484,9 +555,9 @@ The user is automatically removed from all teams on deletion.
 
 **Query parameters**
 
-| Param | Type | Required | Notes |
-|---|---|---|---|
-| `type` | string | ❌ | `"core"` or `"subclub"` |
+| Param  | Type   | Required | Notes                   |
+| ------ | ------ | -------- | ----------------------- |
+| `type` | string | ❌       | `"core"` or `"subclub"` |
 
 **200 OK**
 
@@ -500,9 +571,9 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Invalid `type` value |
+| Status | Code               | Reason               |
+| ------ | ------------------ | -------------------- |
+| 400    | `VALIDATION_ERROR` | Invalid `type` value |
 
 ---
 
@@ -520,7 +591,7 @@ No pagination. `leads` and `memberCount` are computed live from the current user
   "name": "Tech Team",
   "type": "core",
   "description": "...",
-  "leads": [ { "id": "uuid", "name": "Priyanshu Yadav" } ],
+  "leads": [{ "id": "uuid", "name": "Priyanshu Yadav" }],
   "memberCount": 2,
   "members": [
     { "id": "uuid", "name": "Priyanshu Yadav", "position": "lead" },
@@ -531,9 +602,9 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 404 | `NOT_FOUND` | Team not found |
+| Status | Code        | Reason         |
+| ------ | ----------- | -------------- |
+| 404    | `NOT_FOUND` | Team not found |
 
 ---
 
@@ -543,21 +614,21 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `name` | string | ✅ | 1–100 characters, must be unique |
-| `type` | string | ✅ | `"core"` or `"subclub"` |
-| `description` | string | ❌ | Optional free text |
+| Field         | Type   | Required | Notes                            |
+| ------------- | ------ | -------- | -------------------------------- |
+| `name`        | string | ✅       | 1–100 characters, must be unique |
+| `type`        | string | ✅       | `"core"` or `"subclub"`          |
+| `description` | string | ❌       | Optional free text               |
 
 **201 Created** — `data` is the new `Team` (no `members` array, `leads` will be empty until members are added).
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Missing `name` or `type`, or invalid `type` |
-| 403 | `FORBIDDEN` | Caller is not an OB |
-| 409 | `CONFLICT` | Team name already exists |
+| Status | Code               | Reason                                      |
+| ------ | ------------------ | ------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Missing `name` or `type`, or invalid `type` |
+| 403    | `FORBIDDEN`        | Caller is not an OB                         |
+| 409    | `CONFLICT`         | Team name already exists                    |
 
 ---
 
@@ -569,22 +640,22 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 
 **Body** — at least one field required.
 
-| Field | Type | Notes |
-|---|---|---|
-| `name` | string | 1–100 characters |
-| `type` | string | `"core"` or `"subclub"` |
-| `description` | string / null | Pass `null` to clear |
+| Field         | Type          | Notes                   |
+| ------------- | ------------- | ----------------------- |
+| `name`        | string        | 1–100 characters        |
+| `type`        | string        | `"core"` or `"subclub"` |
+| `description` | string / null | Pass `null` to clear    |
 
 **200 OK** — `data` is the updated `Team`.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | No fields sent or invalid value |
-| 403 | `FORBIDDEN` | Caller is not an OB |
-| 404 | `NOT_FOUND` | Team not found |
-| 409 | `CONFLICT` | New name already taken by another team |
+| Status | Code               | Reason                                 |
+| ------ | ------------------ | -------------------------------------- |
+| 400    | `VALIDATION_ERROR` | No fields sent or invalid value        |
+| 403    | `FORBIDDEN`        | Caller is not an OB                    |
+| 404    | `NOT_FOUND`        | Team not found                         |
+| 409    | `CONFLICT`         | New name already taken by another team |
 
 ---
 
@@ -600,11 +671,11 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 403 | `FORBIDDEN` | Caller is not an OB |
-| 404 | `NOT_FOUND` | Team not found |
-| 409 | `CONFLICT` | Deleting this team would leave a `team_lead` user with no lead/colead team, **or** the team has upcoming or today's scheduled meetings |
+| Status | Code        | Reason                                                                                                                                 |
+| ------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 403    | `FORBIDDEN` | Caller is not an OB                                                                                                                    |
+| 404    | `NOT_FOUND` | Team not found                                                                                                                         |
+| 409    | `CONFLICT`  | Deleting this team would leave a `team_lead` user with no lead/colead team, **or** the team has upcoming or today's scheduled meetings |
 
 ---
 
@@ -616,16 +687,16 @@ Add a user to a team, or update their position if already a member.
 
 **Path params**
 
-| Param | Notes |
-|---|---|
-| `id` | Team UUID |
+| Param    | Notes     |
+| -------- | --------- |
+| `id`     | Team UUID |
 | `userId` | User UUID |
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `position` | string | ✅ | `"lead"`, `"colead"`, or `"member"` |
+| Field      | Type   | Required | Notes                               |
+| ---------- | ------ | -------- | ----------------------------------- |
+| `position` | string | ✅       | `"lead"`, `"colead"`, or `"member"` |
 
 **Rule:** `"lead"` or `"colead"` position can only be assigned to a user whose `role` is `"team_lead"`.
 
@@ -633,11 +704,11 @@ Add a user to a team, or update their position if already a member.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Invalid `position`, or assigning lead/colead to a non-`team_lead` user |
-| 403 | `FORBIDDEN` | Caller is not an OB |
-| 404 | `NOT_FOUND` | Team or user not found |
+| Status | Code               | Reason                                                                 |
+| ------ | ------------------ | ---------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Invalid `position`, or assigning lead/colead to a non-`team_lead` user |
+| 403    | `FORBIDDEN`        | Caller is not an OB                                                    |
+| 404    | `NOT_FOUND`        | Team or user not found                                                 |
 
 ---
 
@@ -649,20 +720,20 @@ Remove a user from a team.
 
 **Path params**
 
-| Param | Notes |
-|---|---|
-| `id` | Team UUID |
+| Param    | Notes     |
+| -------- | --------- |
+| `id`     | Team UUID |
 | `userId` | User UUID |
 
 **204 No Content** on success.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Removing this user would leave a `team_lead` with no lead/colead team |
-| 403 | `FORBIDDEN` | Caller is not an OB |
-| 404 | `NOT_FOUND` | Team not found, user not found, or user is not a member of this team |
+| Status | Code               | Reason                                                                |
+| ------ | ------------------ | --------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Removing this user would leave a `team_lead` with no lead/colead team |
+| 403    | `FORBIDDEN`        | Caller is not an OB                                                   |
+| 404    | `NOT_FOUND`        | Team not found, user not found, or user is not a member of this team  |
 
 ---
 
@@ -688,15 +759,13 @@ Returns everything the dashboard page needs in one call.
   "officeBearers": [
     { "id": "uuid", "name": "Aman Verma", "obTitle": "President" }
   ],
-  "executives": [
-    { "id": "uuid", "name": "Neha Singh" }
-  ],
+  "executives": [{ "id": "uuid", "name": "Neha Singh" }],
   "coreTeams": [
     {
       "id": "uuid",
       "name": "Tech Team",
       "type": "core",
-      "leads": [ { "id": "uuid", "name": "Priyanshu Yadav" } ],
+      "leads": [{ "id": "uuid", "name": "Priyanshu Yadav" }],
       "memberCount": 12
     }
   ],
@@ -705,7 +774,7 @@ Returns everything the dashboard page needs in one call.
       "id": "uuid",
       "name": "Design Club",
       "type": "subclub",
-      "leads": [ { "id": "uuid", "name": "Kabir Mehta" } ],
+      "leads": [{ "id": "uuid", "name": "Kabir Mehta" }],
       "memberCount": 8
     }
   ]
@@ -716,9 +785,9 @@ Soft-deleted users are excluded from all counts and lists.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 401 | `UNAUTHENTICATED` | No / invalid token |
+| Status | Code              | Reason             |
+| ------ | ----------------- | ------------------ |
+| 401    | `UNAUTHENTICATED` | No / invalid token |
 
 ---
 
@@ -730,13 +799,13 @@ Soft-deleted users are excluded from all counts and lists.
 
 **Query parameters**
 
-| Param | Type | Required | Notes |
-|---|---|---|---|
-| `from` | string | ✅ | Start of date range, `YYYY-MM-DD` |
-| `to` | string | ✅ | End of date range, `YYYY-MM-DD` |
-| `type` | string | ❌ | `"ob"`, `"core"`, or `"subclub"` |
-| `teamId` | string | ❌ | Filter to one team's meetings |
-| `status` | string | ❌ | `"scheduled"` (default), `"cancelled"`, or `"all"` |
+| Param    | Type   | Required | Notes                                              |
+| -------- | ------ | -------- | -------------------------------------------------- |
+| `from`   | string | ✅       | Start of date range, `YYYY-MM-DD`                  |
+| `to`     | string | ✅       | End of date range, `YYYY-MM-DD`                    |
+| `type`   | string | ❌       | `"ob"`, `"core"`, or `"subclub"`                   |
+| `teamId` | string | ❌       | Filter to one team's meetings                      |
+| `status` | string | ❌       | `"scheduled"` (default), `"cancelled"`, or `"all"` |
 
 The range between `from` and `to` cannot exceed **62 days**.  
 By default (no `status` param), only `"scheduled"` meetings are returned. Cancelled meetings are hidden unless `status=cancelled` or `status=all`.
@@ -753,10 +822,10 @@ Results are sorted by `date` then `startTime` ascending.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Missing `from`/`to`, bad date format, `from` > `to`, range > 62 days, or invalid `type`/`status` value |
-| 401 | `UNAUTHENTICATED` | No / invalid token |
+| Status | Code               | Reason                                                                                                 |
+| ------ | ------------------ | ------------------------------------------------------------------------------------------------------ |
+| 400    | `VALIDATION_ERROR` | Missing `from`/`to`, bad date format, `from` > `to`, range > 62 days, or invalid `type`/`status` value |
+| 401    | `UNAUTHENTICATED`  | No / invalid token                                                                                     |
 
 ---
 
@@ -770,9 +839,9 @@ Results are sorted by `date` then `startTime` ascending.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 404 | `NOT_FOUND` | Meeting not found |
+| Status | Code        | Reason            |
+| ------ | ----------- | ----------------- |
+| 404    | `NOT_FOUND` | Meeting not found |
 
 ---
 
@@ -784,12 +853,12 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `date` | string | ✅ | `YYYY-MM-DD` |
-| `startTime` | string | ✅ | `HH:mm` 24-hour |
-| `endTime` | string | ✅ | `HH:mm` 24-hour, must be after `startTime` |
-| `excludeMeetingId` | string / null | ❌ | Pass the meeting's own ID when checking an edit, so it doesn't clash with itself |
+| Field              | Type          | Required | Notes                                                                            |
+| ------------------ | ------------- | -------- | -------------------------------------------------------------------------------- |
+| `date`             | string        | ✅       | `YYYY-MM-DD`                                                                     |
+| `startTime`        | string        | ✅       | `HH:mm` 24-hour                                                                  |
+| `endTime`          | string        | ✅       | `HH:mm` 24-hour, must be after `startTime`                                       |
+| `excludeMeetingId` | string / null | ❌       | Pass the meeting's own ID when checking an edit, so it doesn't clash with itself |
 
 **200 OK — no clash**
 
@@ -808,9 +877,9 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Missing field, bad format, or `endTime` not after `startTime` |
+| Status | Code               | Reason                                                        |
+| ------ | ------------------ | ------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Missing field, bad format, or `endTime` not after `startTime` |
 
 ---
 
@@ -820,30 +889,34 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Query parameters**
 
-| Param | Type | Notes |
-|---|---|---|
-| `acknowledgeClash` | `"true"` | Pass to force-save despite a clash |
+| Param              | Type     | Notes                                      |
+| ------------------ | -------- | ------------------------------------------ |
+| `acknowledgeClash` | `"true"` | Force-save despite clash (alias: `force`)  |
+| `force`            | `"true"` | Same as `acknowledgeClash` (both accepted) |
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `topic` | string | ✅ | 1–200 characters |
-| `date` | string | ✅ | `YYYY-MM-DD` |
-| `startTime` | string | ✅ | `HH:mm` 24-hour |
-| `endTime` | string | ✅ | `HH:mm`, must be after `startTime` |
-| `teamId` | string / null | Conditional | Required for `team_lead`. OBs omit it (or pass `null`) to create an OB meeting |
-| `note` | string | ❌ | Short optional note |
-| `location` | string | ❌ | Room name or location |
-| `link` | string | ❌ | Valid URL (meet/zoom link) |
+| Field       | Type          | Required    | Notes                                                                          |
+| ----------- | ------------- | ----------- | ------------------------------------------------------------------------------ |
+| `topic`     | string        | ✅          | 1–200 characters                                                               |
+| `date`      | string        | ✅          | `YYYY-MM-DD`                                                                   |
+| `startTime` | string        | ✅          | `HH:mm` 24-hour                                                                |
+| `endTime`   | string        | ✅          | `HH:mm`, must be after `startTime`                                             |
+| `teamId`    | string / null | Conditional | Required for `team_lead`. OBs omit it (or pass `null`) to create an OB meeting |
+| `note`      | string        | ❌          | Short optional note                                                            |
+| `location`  | string        | ❌          | Room name or location                                                          |
+| `link`      | string        | ❌          | Valid URL (meet/zoom link)                                                     |
 
 **Server-set fields** (never send these): `type`, `color`, `createdBy`, `status`.
 
 **Rules:**
+
 - A `team_lead` must supply a `teamId` for a team they lead or co-lead.
 - An OB can create either an OB meeting (no `teamId`) or a team meeting (with `teamId`).
 - If `endTime` is not strictly after `startTime`, returns `400`.
-- Clash check: if the time overlaps any existing scheduled meeting on that date, returns `409 MEETING_CLASH`. The frontend can then resend with `?acknowledgeClash=true` to override.
+- **Clash check**: Returns `409` if the time overlaps any scheduled meeting (regular or tentative) on that date
+- **Tentative overlap**: Also checks against tentative meetings - returns `409` if date/time falls within tentative range
+- Use `?force=true` or `?acknowledgeClash=true` to override and save anyway
 
 **Overlap rule:** `newStart < existingEnd AND newEnd > existingStart AND existing.status == "scheduled"`
 
@@ -851,12 +924,12 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Missing field, bad format, `endTime` not after `startTime`, or invalid URL |
-| 403 | `FORBIDDEN` | Role cannot create meetings, or `team_lead` using a team they don't lead |
-| 404 | `NOT_FOUND` | `teamId` doesn't exist |
-| 409 | `MEETING_CLASH` | Time overlaps another scheduled meeting (data contains `clashes` array) |
+| Status | Code               | Reason                                                                     |
+| ------ | ------------------ | -------------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Missing field, bad format, `endTime` not after `startTime`, or invalid URL |
+| 403    | `FORBIDDEN`        | Role cannot create meetings, or `team_lead` using a team they don't lead   |
+| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                     |
+| 409    | `MEETING_CLASH`    | Time overlaps another scheduled meeting (data contains `clashes` array)    |
 
 ---
 
@@ -868,24 +941,25 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Query parameters**
 
-| Param | Type | Notes |
-|---|---|---|
+| Param              | Type     | Notes                      |
+| ------------------ | -------- | -------------------------- |
 | `acknowledgeClash` | `"true"` | Force-save despite a clash |
 
 **Body** — send only the fields you want to change. At least one is required.
 
-| Field | Type | Notes |
-|---|---|---|
-| `topic` | string | 1–200 characters |
-| `date` | string | `YYYY-MM-DD` |
-| `startTime` | string | `HH:mm` |
-| `endTime` | string | `HH:mm` |
-| `note` | string / null | Pass `null` to clear |
-| `location` | string / null | Pass `null` to clear |
-| `link` | string / null | Valid URL or `null` |
-| `teamId` | string / null | Reassign the meeting's team. Pass a team UUID to change teams (OB: any team; `team_lead`: only a team they lead/co-lead). Pass `null` to convert to an OB meeting — OB only. |
+| Field       | Type          | Notes                                                                                                                                                                        |
+| ----------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `topic`     | string        | 1–200 characters                                                                                                                                                             |
+| `date`      | string        | `YYYY-MM-DD`                                                                                                                                                                 |
+| `startTime` | string        | `HH:mm`                                                                                                                                                                      |
+| `endTime`   | string        | `HH:mm`                                                                                                                                                                      |
+| `note`      | string / null | Pass `null` to clear                                                                                                                                                         |
+| `location`  | string / null | Pass `null` to clear                                                                                                                                                         |
+| `link`      | string / null | Valid URL or `null`                                                                                                                                                          |
+| `teamId`    | string / null | Reassign the meeting's team. Pass a team UUID to change teams (OB: any team; `team_lead`: only a team they lead/co-lead). Pass `null` to convert to an OB meeting — OB only. |
 
 **Rules:**
+
 - Cannot edit a cancelled meeting (returns `409 CONFLICT`).
 - Clash check runs only when `date`, `startTime`, or `endTime` is changing. If only `note`, `location`, `topic`, etc. change with no time change, no clash check is performed.
 - Uses `?acknowledgeClash=true` to override a clash, same as create.
@@ -894,13 +968,13 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | No fields sent, bad format, or `endTime` not after `startTime` |
-| 403 | `FORBIDDEN` | Caller is not the creator or an OB; or a `team_lead` passed `teamId: null` (OB-only); or a `team_lead` assigned a team they don't lead |
-| 404 | `NOT_FOUND` | Meeting not found, or `teamId` doesn't exist |
-| 409 | `CONFLICT` | Meeting is already cancelled |
-| 409 | `MEETING_CLASH` | Time change causes an overlap |
+| Status | Code               | Reason                                                                                                                                 |
+| ------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | No fields sent, bad format, or `endTime` not after `startTime`                                                                         |
+| 403    | `FORBIDDEN`        | Caller is not the creator or an OB; or a `team_lead` passed `teamId: null` (OB-only); or a `team_lead` assigned a team they don't lead |
+| 404    | `NOT_FOUND`        | Meeting not found, or `teamId` doesn't exist                                                                                           |
+| 409    | `CONFLICT`         | Meeting is already cancelled                                                                                                           |
+| 409    | `MEETING_CLASH`    | Time change causes an overlap                                                                                                          |
 
 ---
 
@@ -918,11 +992,11 @@ No body.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 403 | `FORBIDDEN` | Caller is not the creator or an OB |
-| 404 | `NOT_FOUND` | Meeting not found |
-| 409 | `CONFLICT` | Meeting is already cancelled |
+| Status | Code        | Reason                             |
+| ------ | ----------- | ---------------------------------- |
+| 403    | `FORBIDDEN` | Caller is not the creator or an OB |
+| 404    | `NOT_FOUND` | Meeting not found                  |
+| 409    | `CONFLICT`  | Meeting is already cancelled       |
 
 ---
 
@@ -938,10 +1012,158 @@ No body.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 403 | `FORBIDDEN` | Caller is not an OB |
-| 404 | `NOT_FOUND` | Meeting not found |
+| Status | Code        | Reason              |
+| ------ | ----------- | ------------------- |
+| 403    | `FORBIDDEN` | Caller is not an OB |
+| 404    | `NOT_FOUND` | Meeting not found   |
+
+---
+
+## Tentative Meeting routes
+
+**What are Tentative Meetings?**
+
+Tentative meetings allow admins and team leads to "block" date/time ranges when the exact meeting schedule is not yet confirmed. This helps coordinate scheduling by warning others when they try to book meetings during tentative periods.
+
+**Key Features:**
+- **Date ranges**: Specify `startDate` to `endDate` (can be same day or span multiple days)
+- **Optional time ranges**: Can specify `startTime`/`endTime`, or leave blank for all-day
+- **Clash warnings**: Creating regular or tentative meetings during tentative periods triggers a `409` error
+- **Force override**: Use `?force=true` to save anyway despite overlaps
+- **Bidirectional**: Regular meetings also check for tentative meeting clashes
+
+### `GET /api/v1/tentative-meetings`
+
+**Auth** — any role.
+
+**Query parameters**
+
+| Param    | Type   | Required | Notes                                                  |
+| -------- | ------ | -------- | ------------------------------------------------------ |
+| `from`   | string | ❌       | Filter: tentative meetings overlapping this date range |
+| `to`     | string | ❌       | Must be used with `from`. Format: `YYYY-MM-DD`         |
+| `teamId` | string | ❌       | Filter by team                                         |
+| `status` | string | ❌       | `"scheduled"` (default), `"cancelled"`, or `"all"`     |
+
+**200 OK** — `data.items` is an array of `TentativeMeeting` objects.
+
+**Tentative Meeting shape:**
+
+```json
+{
+  "id": "uuid",
+  "type": "ob" | "core" | "subclub",
+  "color": "#1E3A8A",
+  "team": { "id": "uuid", "name": "string" } | null,
+  "topic": "Planning Week",
+  "startDate": "2026-11-20",
+  "endDate": "2026-11-25",
+  "startTime": "14:00" | null,
+  "endTime": "16:00" | null,
+  "note": "string" | null,
+  "location": "string" | null,
+  "link": "string" | null,
+  "status": "scheduled" | "cancelled",
+  "createdBy": { "id": "uuid", "name": "string" },
+  "createdAt": "2026-11-15T10:00:00.000Z",
+  "updatedAt": "2026-11-15T12:00:00.000Z" | null
+}
+```
+
+**Notes:**
+- If `startTime`/`endTime` are `null`, the tentative period is all-day
+- Date range is inclusive (`startDate` and `endDate` both included)
+- Default: only `scheduled` tentative meetings are returned
+
+---
+
+### `GET /api/v1/tentative-meetings/:id`
+
+**Auth** — any role.
+
+**Path params** — `id`: tentative meeting UUID.
+
+**200 OK** — `data` is a `TentativeMeeting` object.
+
+**Errors**
+
+| Status | Code        | Reason                       |
+| ------ | ----------- | ---------------------------- |
+| 404    | `NOT_FOUND` | Tentative meeting not found |
+
+---
+
+### `POST /api/v1/tentative-meetings`
+
+**Auth** — `ob` or `team_lead`.
+
+**Query parameters**
+
+| Param   | Type     | Notes                                       |
+| ------- | -------- | ------------------------------------------- |
+| `force` | `"true"` | Save despite overlaps with existing meetings |
+
+**Body**
+
+| Field       | Type          | Required    | Notes                                                      |
+| ----------- | ------------- | ----------- | ---------------------------------------------------------- |
+| `topic`     | string        | ✅          | 1–200 characters                                            |
+| `startDate` | string        | ✅          | `YYYY-MM-DD`                                                |
+| `endDate`   | string        | ✅          | `YYYY-MM-DD`, must be on or after `startDate`               |
+| `startTime` | string / null | Conditional | `HH:mm`. Must provide both or neither                       |
+| `endTime`   | string / null | Conditional | `HH:mm`, must be after `startTime`                          |
+| `teamId`    | string / null | Conditional | Required for `team_lead`. OBs omit for OB meeting           |
+| `note`      | string        | ❌          | Optional note                                              |
+| `location`  | string        | ❌          | Room or location                                           |
+| `link`      | string        | ❌          | Valid URL                                                  |
+
+**Rules:**
+
+- Clash check returns `409` if overlapping scheduled meetings/tentatives exist
+- Use `?force=true` to override and save anyway
+
+**201 Created** — includes tentative meeting + `warning` + `overlaps` details if forced.
+
+**Errors**
+
+| Status | Code               | Reason                                                                            |
+| ------ | ------------------ | --------------------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Missing field, invalid format, date/time validation failed                         |
+| 403    | `FORBIDDEN`        | Role cannot create, or `team_lead` using team they don't lead                     |
+| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                            |
+| 409    | `MEETING_CLASH`    | Overlaps existing meetings. Use `?force=true` to override                          |
+
+---
+
+### `PATCH /api/v1/tentative-meetings/:id`
+
+**Auth** — creator or `ob`.
+
+**Query param** — `force="true"` to update despite overlaps.
+
+**Body** — partial update (at least one field required).
+
+**200 OK** — updated tentative meeting + warnings/overlaps if applicable.
+
+---
+
+### `POST /api/v1/tentative-meetings/:id/cancel`
+
+**Auth** — creator or `ob`.
+
+Soft cancel (sets status to `"cancelled"`).
+
+**200 OK** — cancelled tentative meeting.
+
+---
+
+### `DELETE /api/v1/tentative-meetings/:id`
+
+**Auth** — `ob` only.
+
+Hard delete.
+
+**204 No Content** — successful deletion.
 
 ---
 
@@ -953,14 +1175,14 @@ No body.
 
 **Query parameters**
 
-| Param | Type | Required | Notes |
-|---|---|---|---|
-| `type` | string | ❌ | `"society"` or `"team"` |
-| `teamId` | string | ❌ | Filter to one team's announcements |
-| `isPinned` | string | ❌ | `"true"` or `"false"` |
-| `priority` | string | ❌ | `"normal"` or `"urgent"` |
-| `page` | integer | ❌ | Default `1` |
-| `limit` | integer | ❌ | Default `20`, max `100` |
+| Param      | Type    | Required | Notes                              |
+| ---------- | ------- | -------- | ---------------------------------- |
+| `type`     | string  | ❌       | `"society"` or `"team"`            |
+| `teamId`   | string  | ❌       | Filter to one team's announcements |
+| `isPinned` | string  | ❌       | `"true"` or `"false"`              |
+| `priority` | string  | ❌       | `"normal"` or `"urgent"`           |
+| `page`     | integer | ❌       | Default `1`                        |
+| `limit`    | integer | ❌       | Default `20`, max `100`            |
 
 **Sorting:** Pinned announcements (`isPinned: true`) always come first, sorted by `createdAt DESC`. Unpinned follow, also sorted by `createdAt DESC`.
 
@@ -975,9 +1197,9 @@ No body.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Invalid query param value (`type`, `priority`, `isPinned`, `page`, or `limit`) |
+| Status | Code               | Reason                                                                         |
+| ------ | ------------------ | ------------------------------------------------------------------------------ |
+| 400    | `VALIDATION_ERROR` | Invalid query param value (`type`, `priority`, `isPinned`, `page`, or `limit`) |
 
 ---
 
@@ -991,9 +1213,9 @@ No body.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 404 | `NOT_FOUND` | Announcement not found |
+| Status | Code        | Reason                 |
+| ------ | ----------- | ---------------------- |
+| 404    | `NOT_FOUND` | Announcement not found |
 
 ---
 
@@ -1003,15 +1225,16 @@ No body.
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `title` | string | ✅ | 1–150 characters |
-| `content` | string | ✅ | Non-empty |
-| `teamId` | string / null | Conditional | Required for team announcements. Omit or pass `null` for society-wide |
-| `priority` | string | ❌ | `"normal"` (default) or `"urgent"` |
-| `isPinned` | boolean | ❌ | Default `false` |
+| Field      | Type          | Required    | Notes                                                                 |
+| ---------- | ------------- | ----------- | --------------------------------------------------------------------- |
+| `title`    | string        | ✅          | 1–150 characters                                                      |
+| `content`  | string        | ✅          | Non-empty                                                             |
+| `teamId`   | string / null | Conditional | Required for team announcements. Omit or pass `null` for society-wide |
+| `priority` | string        | ❌          | `"normal"` (default) or `"urgent"`                                    |
+| `isPinned` | boolean       | ❌          | Default `false`                                                       |
 
 **Rules:**
+
 - If `teamId` is omitted/`null`, only `ob` can create (type becomes `"society"`).
 - If `teamId` is provided, a `team_lead` can only post for a team they lead or co-lead. An `ob` can post for any team.
 - `type` and `createdBy` are set by the server.
@@ -1020,11 +1243,11 @@ No body.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Missing title/content, or invalid priority value |
-| 403 | `FORBIDDEN` | Role is not `ob` or `team_lead`; or non-OB trying a society-wide post; or `team_lead` using a team they don't lead |
-| 404 | `NOT_FOUND` | `teamId` doesn't exist |
+| Status | Code               | Reason                                                                                                             |
+| ------ | ------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| 400    | `VALIDATION_ERROR` | Missing title/content, or invalid priority value                                                                   |
+| 403    | `FORBIDDEN`        | Role is not `ob` or `team_lead`; or non-OB trying a society-wide post; or `team_lead` using a team they don't lead |
+| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                                                             |
 
 ---
 
@@ -1036,12 +1259,12 @@ No body.
 
 **Body** — at least one field required.
 
-| Field | Type | Notes |
-|---|---|---|
-| `title` | string | 1–150 characters |
-| `content` | string | Non-empty |
-| `priority` | string | `"normal"` or `"urgent"` |
-| `isPinned` | boolean | |
+| Field      | Type    | Notes                    |
+| ---------- | ------- | ------------------------ |
+| `title`    | string  | 1–150 characters         |
+| `content`  | string  | Non-empty                |
+| `priority` | string  | `"normal"` or `"urgent"` |
+| `isPinned` | boolean |                          |
 
 `updatedAt` is automatically set to the current timestamp on every successful update.
 
@@ -1049,11 +1272,11 @@ No body.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | No fields sent, or invalid value |
-| 403 | `FORBIDDEN` | Caller is not the creator or an OB |
-| 404 | `NOT_FOUND` | Announcement not found |
+| Status | Code               | Reason                             |
+| ------ | ------------------ | ---------------------------------- |
+| 400    | `VALIDATION_ERROR` | No fields sent, or invalid value   |
+| 403    | `FORBIDDEN`        | Caller is not the creator or an OB |
+| 404    | `NOT_FOUND`        | Announcement not found             |
 
 ---
 
@@ -1069,10 +1292,10 @@ No body.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 403 | `FORBIDDEN` | Caller is not the creator or an OB |
-| 404 | `NOT_FOUND` | Announcement not found |
+| Status | Code        | Reason                             |
+| ------ | ----------- | ---------------------------------- |
+| 403    | `FORBIDDEN` | Caller is not the creator or an OB |
+| 404    | `NOT_FOUND` | Announcement not found             |
 
 ---
 
@@ -1088,11 +1311,11 @@ Comments exist on announcements and meetings. The read/post endpoints are nested
 
 **Query parameters**
 
-| Param | Type | Notes |
-|---|---|---|
-| `parentCommentId` | string | Pass `"null"` to get only top-level comments. Pass a comment UUID to get only replies to that comment. Omit to get all comments. |
-| `page` | integer | Default `1` |
-| `limit` | integer | Default `20`, max `100` |
+| Param             | Type    | Notes                                                                                                                            |
+| ----------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `parentCommentId` | string  | Pass `"null"` to get only top-level comments. Pass a comment UUID to get only replies to that comment. Omit to get all comments. |
+| `page`            | integer | Default `1`                                                                                                                      |
+| `limit`           | integer | Default `20`, max `100`                                                                                                          |
 
 **200 OK** — paginated list sorted by `createdAt` ascending.
 
@@ -1105,9 +1328,9 @@ Comments exist on announcements and meetings. The read/post endpoints are nested
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 404 | `NOT_FOUND` | Announcement not found |
+| Status | Code        | Reason                 |
+| ------ | ----------- | ---------------------- |
+| 404    | `NOT_FOUND` | Announcement not found |
 
 ---
 
@@ -1119,10 +1342,10 @@ Comments exist on announcements and meetings. The read/post endpoints are nested
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `content` | string | ✅ | 1–1000 characters |
-| `parentCommentId` | string / null | ❌ | UUID of the comment being replied to. Must be a top-level comment on this announcement |
+| Field             | Type          | Required | Notes                                                                                  |
+| ----------------- | ------------- | -------- | -------------------------------------------------------------------------------------- |
+| `content`         | string        | ✅       | 1–1000 characters                                                                      |
+| `parentCommentId` | string / null | ❌       | UUID of the comment being replied to. Must be a top-level comment on this announcement |
 
 **Nesting rule:** Only one level of replies is allowed. Attempting to reply to a reply returns `400`.
 
@@ -1130,10 +1353,10 @@ Comments exist on announcements and meetings. The read/post endpoints are nested
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Empty content, or `parentCommentId` is itself a reply |
-| 404 | `NOT_FOUND` | Announcement not found, or `parentCommentId` doesn't exist on this announcement |
+| Status | Code               | Reason                                                                          |
+| ------ | ------------------ | ------------------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Empty content, or `parentCommentId` is itself a reply                           |
+| 404    | `NOT_FOUND`        | Announcement not found, or `parentCommentId` doesn't exist on this announcement |
 
 ---
 
@@ -1149,9 +1372,9 @@ Comments exist on announcements and meetings. The read/post endpoints are nested
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 404 | `NOT_FOUND` | Meeting not found |
+| Status | Code        | Reason            |
+| ------ | ----------- | ----------------- |
+| 404    | `NOT_FOUND` | Meeting not found |
 
 ---
 
@@ -1169,10 +1392,10 @@ Comments can be posted on cancelled meetings.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Empty content, or `parentCommentId` is a reply |
-| 404 | `NOT_FOUND` | Meeting not found, or `parentCommentId` doesn't exist on this meeting |
+| Status | Code               | Reason                                                                |
+| ------ | ------------------ | --------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Empty content, or `parentCommentId` is a reply                        |
+| 404    | `NOT_FOUND`        | Meeting not found, or `parentCommentId` doesn't exist on this meeting |
 
 ---
 
@@ -1186,9 +1409,9 @@ Comments can be posted on cancelled meetings.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 404 | `NOT_FOUND` | Comment not found |
+| Status | Code        | Reason            |
+| ------ | ----------- | ----------------- |
+| 404    | `NOT_FOUND` | Comment not found |
 
 ---
 
@@ -1200,9 +1423,9 @@ Comments can be posted on cancelled meetings.
 
 **Body**
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `content` | string | ✅ | 1–1000 characters |
+| Field     | Type   | Required | Notes             |
+| --------- | ------ | -------- | ----------------- |
+| `content` | string | ✅       | 1–1000 characters |
 
 `updatedAt` is set automatically.
 
@@ -1210,11 +1433,11 @@ Comments can be posted on cancelled meetings.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Missing or empty content |
-| 403 | `FORBIDDEN` | Caller is not the author |
-| 404 | `NOT_FOUND` | Comment not found |
+| Status | Code               | Reason                   |
+| ------ | ------------------ | ------------------------ |
+| 400    | `VALIDATION_ERROR` | Missing or empty content |
+| 403    | `FORBIDDEN`        | Caller is not the author |
+| 404    | `NOT_FOUND`        | Comment not found        |
 
 ---
 
@@ -1230,29 +1453,9 @@ Comments can be posted on cancelled meetings.
 
 **Errors**
 
-| Status | Code | Reason |
-|---|---|---|
-| 403 | `FORBIDDEN` | Caller is not the author or an OB |
-| 404 | `NOT_FOUND` | Comment not found |
+| Status | Code        | Reason                            |
+| ------ | ----------- | --------------------------------- |
+| 403    | `FORBIDDEN` | Caller is not the author or an OB |
+| 404    | `NOT_FOUND` | Comment not found                 |
 
 ---
-
-## Seed credentials
-
-The database is wiped and re-seeded every time the server starts (in non-production mode). These users are always available after a fresh start:
-
-| Role | Email | Password |
-|---|---|---|
-| `ob` | `aman@techspace.com` | `password123` |
-| `team_lead` | `priyanshu@techspace.com` | `password123` |
-| `team_lead` | `kabir@techspace.com` | `password123` |
-| `member` | `riya@techspace.com` | `password123` |
-| `executive` | `neha@techspace.com` | `password123` |
-| `faculty` | `gupta@techspace.com` | `password123` |
-
-Pre-seeded teams:
-
-| Name | Type | Lead |
-|---|---|---|
-| Tech Team | `core` | Priyanshu Yadav |
-| Design Club | `subclub` | Kabir Mehta |
