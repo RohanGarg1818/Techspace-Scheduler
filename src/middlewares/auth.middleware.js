@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { verifyToken } from "../utils/jwtUtils.js";
 import { ErrorCodeEnum } from "../utils/constants.js";
+import { assertCan, getPermission } from "../utils/access.js";
 import db from "../db/index.js";
 
 export const authenticate = asyncHandler(async (req, res, next) => {
@@ -49,32 +50,10 @@ export const authenticate = asyncHandler(async (req, res, next) => {
   }
 });
 
-/**
- * Middleware to check if user has required role(s)
- * @param {string[]} allowedRoles - Array of allowed roles
- */
-export const authorize = (...allowedRoles) => {
+export const can = (action) => {
+  getPermission(action);
   return asyncHandler(async (req, res, next) => {
-    if (!req.user) {
-      throw new ApiError(
-        401,
-        ErrorCodeEnum.UNAUTHENTICATED,
-        "Authentication required",
-      );
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      throw new ApiError(
-        403,
-        ErrorCodeEnum.FORBIDDEN,
-        "You don't have permission to perform this action",
-      );
-    }
-
+    assertCan(req.user, action);
     next();
   });
 };
-
-export const isOB = authorize("ob");
-
-export const isOBOrTeamLead = authorize("ob", "team_lead");

@@ -6,7 +6,7 @@ import {
   updateUser,
   deleteUser,
 } from "../controllers/user.controllers.js";
-import { authenticate, isOB } from "../middlewares/auth.middleware.js";
+import { authenticate, can } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import {
   createUserValidator,
@@ -17,21 +17,27 @@ import {
 
 const router = Router();
 
-// Authenticated users can view users
-router.get("/", authenticate, getUsersQueryValidator(), validate, getUsers);
+router.get(
+  "/",
+  authenticate,
+  can("users.list"),
+  getUsersQueryValidator(),
+  validate,
+  getUsers,
+);
 router.get(
   "/:id",
   authenticate,
+  can("users.view"),
   userParamValidator("id"),
   validate,
   getUserById,
 );
 
-// OB only routes
 router.post(
   "/",
   authenticate,
-  isOB,
+  can("users.create"),
   createUserValidator(),
   validate,
   createUser,
@@ -39,7 +45,7 @@ router.post(
 router.patch(
   "/:id",
   authenticate,
-  isOB,
+  can("users.update"),
   userParamValidator("id"),
   updateUserValidator(),
   validate,
@@ -48,7 +54,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
-  isOB,
+  can("users.delete"),
   userParamValidator("id"),
   validate,
   deleteUser,

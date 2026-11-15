@@ -20,14 +20,13 @@ A meeting calendar and coordination backend for a tech society.
 13. [Meeting routes](#meeting-routes)
 14. [Tentative Meeting routes](#tentative-meeting-routes)
 15. [Announcement routes](#announcement-routes)
-16. [Comment routes](#comment-routes)
-17. [Seed credentials](#seed-credentials)
 
 ---
 
 ## Setup & Installation
 
 ### Prerequisites
+
 - Node.js 18+ (tested on v20+)
 - PostgreSQL 14+ database
 - npm or yarn package manager
@@ -57,6 +56,7 @@ NODE_ENV=development
 ```
 
 **Security Note**: Change `JWT_SECRET` to a strong random string in production. Generate one with:
+
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
@@ -71,8 +71,8 @@ export DATABASE_URL="postgresql://user:pass@host:5432/dbname?sslmode=require"
 # 2. Run migrations
 npm run migrate
 
-# 3. Create your first OB user
-npm run createob
+# 3. Create your first admin user (defaults to faculty role)
+npm run createadmin
 
 # 4. Start server
 npm start
@@ -80,16 +80,14 @@ npm start
 
 ### Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server with nodemon (auto-restart) |
-| `npm start` | Start production server |
-| `npm run migrate` | Run database migrations (idempotent, safe to re-run) |
-| `npm run seed` | Seed database with test data (dev only, skips if data exists) |
-| `npm run createob` | Interactive script to create an Office Bearer user |
-| `npm run lint` | Run ESLint |
-| `npm run format` | Format code with Prettier |
-
+| Command               | Description                                                           |
+| --------------------- | --------------------------------------------------------------------- |
+| `npm run dev`         | Start development server with nodemon (auto-restart)                  |
+| `npm start`           | Start production server                                               |
+| `npm run migrate`     | Run database migrations (idempotent, safe to re-run)                  |
+| `npm run createadmin` | Interactive script to create an admin user (defaults to faculty role) |
+| `npm run lint`        | Run ESLint                                                            |
+| `npm run format`      | Format code with Prettier                                             |
 
 ## Running the server
 
@@ -104,6 +102,7 @@ npm start
 Default port is `8000`. Set `PORT` in `.env` to override.
 
 **Health Check:**
+
 ```bash
 curl http://localhost:8000/api/v1/healthcheck
 ```
@@ -137,19 +136,17 @@ Every route except `POST /auth/login` requires a valid JWT token in the `Authori
 
 **Global permission matrix**
 
-| Action                           | ob     | faculty | executive | team_lead        | member |
-| -------------------------------- | ------ | ------- | --------- | ---------------- | ------ |
-| View everything                  | ✅     | ✅      | ✅        | ✅               | ✅     |
-| Create / edit / delete users     | ✅     | ❌      | ❌        | ❌               | ❌     |
-| Manage teams                     | ✅     | ❌      | ❌        | ❌               | ❌     |
-| Create meeting                   | ✅     | ❌      | ❌        | ✅ own team only | ❌     |
-| Edit / cancel meeting            | ✅ any | ❌      | ❌        | ✅ own creations | ❌     |
-| Delete meeting permanently       | ✅     | ❌      | ❌        | ❌               | ❌     |
-| Create announcement              | ✅     | ❌      | ❌        | ✅ own team only | ❌     |
-| Edit / delete announcement       | ✅ any | ❌      | ❌        | ✅ own creations | ❌     |
-| Post / edit / delete own comment | ✅     | ✅      | ✅        | ✅               | ✅     |
-| Delete any comment (moderation)  | ✅     | ❌      | ❌        | ❌               | ❌     |
-| Change own password              | ✅     | ✅      | ✅        | ✅               | ✅     |
+| Action                       | ob     | faculty | executive | team_lead        | member |
+| ---------------------------- | ------ | ------- | --------- | ---------------- | ------ |
+| View everything              | ✅     | ✅      | ✅        | ✅               | ✅     |
+| Create / edit / delete users | ❌     | ✅      | ❌        | ❌               | ❌     |
+| Manage teams                 | ❌     | ✅      | ❌        | ❌               | ❌     |
+| Create meeting               | ✅     | ✅      | ❌        | ✅ own team only | ❌     |
+| Edit / cancel meeting        | ✅ own | ✅ all  | ❌        | ✅ own creations | ❌     |
+| Delete meeting permanently   | ✅     | ✅      | ❌        | ❌               | ❌     |
+| Create announcement          | ✅     | ✅      | ❌        | ✅ own team only | ❌     |
+| Edit / delete announcement   | ✅ own | ✅ all  | ❌        | ✅ own creations | ❌     |
+| Change own password          | ✅     | ✅      | ✅        | ✅               | ✅     |
 
 ---
 
@@ -310,27 +307,6 @@ The detail view (`GET /teams/:id`) adds a `members` array:
 `type` is set by the server: `"society"` when no `teamId`, `"team"` otherwise.  
 `updatedAt` is `null` until the first edit.
 
-### Comment
-
-```json
-{
-  "id": "uuid",
-  "announcementId": "uuid",
-  "meetingId": null,
-  "content": "Will the files be shared?",
-  "parentCommentId": null,
-  "createdBy": { "id": "uuid", "name": "Riya Sharma" },
-  "createdAt": "2026-11-20T11:00:00.000Z",
-  "updatedAt": null
-}
-```
-
-Exactly one of `announcementId` / `meetingId` is set; the other is `null`.  
-`parentCommentId` is `null` for top-level comments and a UUID for replies.  
-Threads are **one level deep only** — you cannot reply to a reply.
-
----
-
 ## Auth routes
 
 ### `POST /api/v1/auth/login`
@@ -455,7 +431,7 @@ Soft-deleted users never appear.
 
 ### `POST /api/v1/users`
 
-**Auth** — `ob` only.
+**Auth** — `faculty` only.
 
 **Body**
 
@@ -482,7 +458,7 @@ Soft-deleted users never appear.
 | Status | Code               | Reason                                                                         |
 | ------ | ------------------ | ------------------------------------------------------------------------------ |
 | 400    | `VALIDATION_ERROR` | Missing field, bad email, short password, bad role, or cross-field rule broken |
-| 403    | `FORBIDDEN`        | Caller is not an OB                                                            |
+| 403    | `FORBIDDEN`        | Caller is not faculty                                                          |
 | 404    | `NOT_FOUND`        | A `teamId` in `teams` does not exist                                           |
 | 409    | `CONFLICT`         | Email already in use                                                           |
 
@@ -490,7 +466,7 @@ Soft-deleted users never appear.
 
 ### `PATCH /api/v1/users/:id`
 
-**Auth** — `ob` only.
+**Auth** — `faculty` only.
 
 **Path params** — `id`: user UUID.
 
@@ -509,29 +485,29 @@ Soft-deleted users never appear.
 
 - Cross-field rules are validated against the **final merged state** (existing values combined with your changes).
 - Changing `role` away from `ob` automatically clears `obTitle` to `null`.
-- An OB cannot change their own role (returns `403`).
-- Cannot demote the last remaining OB (returns `409`).
+- A faculty user cannot change their own role (returns `403`).
+- Cannot demote the last remaining faculty user (returns `409`).
 
 **200 OK** — `data` is the updated `User`.
 
 **Errors**
 
-| Status | Code               | Reason                                                        |
-| ------ | ------------------ | ------------------------------------------------------------- |
-| 400    | `VALIDATION_ERROR` | No fields sent, invalid value, or cross-field rule broken     |
-| 403    | `FORBIDDEN`        | Caller is not an OB, or OB is trying to change their own role |
-| 404    | `NOT_FOUND`        | User or a `teamId` doesn't exist                              |
-| 409    | `CONFLICT`         | Email taken, or demoting the last OB                          |
+| Status | Code               | Reason                                                            |
+| ------ | ------------------ | ----------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | No fields sent, invalid value, or cross-field rule broken         |
+| 403    | `FORBIDDEN`        | Caller is not faculty, or faculty trying to change their own role |
+| 404    | `NOT_FOUND`        | User or a `teamId` doesn't exist                                  |
+| 409    | `CONFLICT`         | Email taken, or demoting the last faculty                         |
 
 ---
 
 ### `DELETE /api/v1/users/:id`
 
-**Auth** — `ob` only.
+**Auth** — `faculty` only.
 
 **Path params** — `id`: user UUID.
 
-**Soft delete** — sets a `deletedAt` timestamp. The user can no longer log in and is hidden from all list responses. Their meetings, announcements, and comments remain intact and still show their name.
+**Soft delete** — sets a `deletedAt` timestamp. The user can no longer log in and is hidden from all list responses. Their meetings, announcements
 
 The user is automatically removed from all teams on deletion.
 
@@ -539,11 +515,11 @@ The user is automatically removed from all teams on deletion.
 
 **Errors**
 
-| Status | Code        | Reason                                          |
-| ------ | ----------- | ----------------------------------------------- |
-| 403    | `FORBIDDEN` | Caller is not an OB                             |
-| 404    | `NOT_FOUND` | User not found or already deleted               |
-| 409    | `CONFLICT`  | Cannot delete yourself, or deleting the last OB |
+| Status | Code        | Reason                                               |
+| ------ | ----------- | ---------------------------------------------------- |
+| 403    | `FORBIDDEN` | Caller is not faculty                                |
+| 404    | `NOT_FOUND` | User not found or already deleted                    |
+| 409    | `CONFLICT`  | Cannot delete yourself, or deleting the last faculty |
 
 ---
 
@@ -610,7 +586,7 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 
 ### `POST /api/v1/teams`
 
-**Auth** — `ob` only.
+**Auth** — `faculty` only.
 
 **Body**
 
@@ -627,14 +603,14 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 | Status | Code               | Reason                                      |
 | ------ | ------------------ | ------------------------------------------- |
 | 400    | `VALIDATION_ERROR` | Missing `name` or `type`, or invalid `type` |
-| 403    | `FORBIDDEN`        | Caller is not an OB                         |
+| 403    | `FORBIDDEN`        | Caller is not faculty                       |
 | 409    | `CONFLICT`         | Team name already exists                    |
 
 ---
 
 ### `PATCH /api/v1/teams/:id`
 
-**Auth** — `ob` only.
+**Auth** — `faculty` only.
 
 **Path params** — `id`: team UUID.
 
@@ -653,7 +629,7 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 | Status | Code               | Reason                                 |
 | ------ | ------------------ | -------------------------------------- |
 | 400    | `VALIDATION_ERROR` | No fields sent or invalid value        |
-| 403    | `FORBIDDEN`        | Caller is not an OB                    |
+| 403    | `FORBIDDEN`        | Caller is not faculty                  |
 | 404    | `NOT_FOUND`        | Team not found                         |
 | 409    | `CONFLICT`         | New name already taken by another team |
 
@@ -661,7 +637,7 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 
 ### `DELETE /api/v1/teams/:id`
 
-**Auth** — `ob` only.
+**Auth** — `faculty` only.
 
 **Path params** — `id`: team UUID.
 
@@ -673,7 +649,7 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 
 | Status | Code        | Reason                                                                                                                                 |
 | ------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 403    | `FORBIDDEN` | Caller is not an OB                                                                                                                    |
+| 403    | `FORBIDDEN` | Caller is not faculty                                                                                                                  |
 | 404    | `NOT_FOUND` | Team not found                                                                                                                         |
 | 409    | `CONFLICT`  | Deleting this team would leave a `team_lead` user with no lead/colead team, **or** the team has upcoming or today's scheduled meetings |
 
@@ -683,7 +659,7 @@ No pagination. `leads` and `memberCount` are computed live from the current user
 
 Add a user to a team, or update their position if already a member.
 
-**Auth** — `ob` only.
+**Auth** — `faculty` only.
 
 **Path params**
 
@@ -707,7 +683,7 @@ Add a user to a team, or update their position if already a member.
 | Status | Code               | Reason                                                                 |
 | ------ | ------------------ | ---------------------------------------------------------------------- |
 | 400    | `VALIDATION_ERROR` | Invalid `position`, or assigning lead/colead to a non-`team_lead` user |
-| 403    | `FORBIDDEN`        | Caller is not an OB                                                    |
+| 403    | `FORBIDDEN`        | Caller is not faculty                                                  |
 | 404    | `NOT_FOUND`        | Team or user not found                                                 |
 
 ---
@@ -716,7 +692,7 @@ Add a user to a team, or update their position if already a member.
 
 Remove a user from a team.
 
-**Auth** — `ob` only.
+**Auth** — `faculty` only.
 
 **Path params**
 
@@ -732,7 +708,7 @@ Remove a user from a team.
 | Status | Code               | Reason                                                                |
 | ------ | ------------------ | --------------------------------------------------------------------- |
 | 400    | `VALIDATION_ERROR` | Removing this user would leave a `team_lead` with no lead/colead team |
-| 403    | `FORBIDDEN`        | Caller is not an OB                                                   |
+| 403    | `FORBIDDEN`        | Caller is not faculty                                                 |
 | 404    | `NOT_FOUND`        | Team not found, user not found, or user is not a member of this team  |
 
 ---
@@ -896,23 +872,23 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Body**
 
-| Field       | Type          | Required    | Notes                                                                          |
-| ----------- | ------------- | ----------- | ------------------------------------------------------------------------------ |
-| `topic`     | string        | ✅          | 1–200 characters                                                               |
-| `date`      | string        | ✅          | `YYYY-MM-DD`                                                                   |
-| `startTime` | string        | ✅          | `HH:mm` 24-hour                                                                |
-| `endTime`   | string        | ✅          | `HH:mm`, must be after `startTime`                                             |
-| `teamId`    | string / null | Conditional | Required for `team_lead`. OBs omit it (or pass `null`) to create an OB meeting |
-| `note`      | string        | ❌          | Short optional note                                                            |
-| `location`  | string        | ❌          | Room name or location                                                          |
-| `link`      | string        | ❌          | Valid URL (meet/zoom link)                                                     |
+| Field       | Type          | Required    | Notes                                                                                      |
+| ----------- | ------------- | ----------- | ------------------------------------------------------------------------------------------ |
+| `topic`     | string        | ✅          | 1–200 characters                                                                           |
+| `date`      | string        | ✅          | `YYYY-MM-DD`                                                                               |
+| `startTime` | string        | ✅          | `HH:mm` 24-hour                                                                            |
+| `endTime`   | string        | ✅          | `HH:mm`, must be after `startTime`                                                         |
+| `teamId`    | string / null | Conditional | Required for `team_lead`. OBs and faculty omit it (or pass `null`) to create an OB meeting |
+| `note`      | string        | ❌          | Short optional note                                                                        |
+| `location`  | string        | ❌          | Room name or location                                                                      |
+| `link`      | string        | ❌          | Valid URL (meet/zoom link)                                                                 |
 
 **Server-set fields** (never send these): `type`, `color`, `createdBy`, `status`.
 
 **Rules:**
 
 - A `team_lead` must supply a `teamId` for a team they lead or co-lead.
-- An OB can create either an OB meeting (no `teamId`) or a team meeting (with `teamId`).
+- An OB or faculty can create either an OB meeting (no `teamId`) or a team meeting (with `teamId`).
 - If `endTime` is not strictly after `startTime`, returns `400`.
 - **Clash check**: Returns `409` if the time overlaps any scheduled meeting (regular or tentative) on that date
 - **Tentative overlap**: Also checks against tentative meetings - returns `409` if date/time falls within tentative range
@@ -924,18 +900,23 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Errors**
 
-| Status | Code               | Reason                                                                     |
-| ------ | ------------------ | -------------------------------------------------------------------------- |
-| 400    | `VALIDATION_ERROR` | Missing field, bad format, `endTime` not after `startTime`, or invalid URL |
-| 403    | `FORBIDDEN`        | Role cannot create meetings, or `team_lead` using a team they don't lead   |
-| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                     |
-| 409    | `MEETING_CLASH`    | Time overlaps another scheduled meeting (data contains `clashes` array)    |
+| Status | Code               | Reason                                                                                                |
+| ------ | ------------------ | ----------------------------------------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Missing field, bad format, `endTime` not after `startTime`, or invalid URL                            |
+| 403    | `FORBIDDEN`        | `team_lead` trying to create an OB meeting (no `teamId`), or `team_lead` using a team they don't lead |
+| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                                                |
+| 409    | `MEETING_CLASH`    | Time overlaps another scheduled meeting (data contains `clashes` array)                               |
+
+**403 messages:**
+
+- Team lead without teamId: `"Only OBs and faculty can create or change a meeting to an OB meeting"`
+- Team lead with wrong team: `"You can only assign meetings to teams you lead or co-lead"`
 
 ---
 
 ### `PATCH /api/v1/meetings/:id`
 
-**Auth** — creator of the meeting or `ob`.
+**Auth** — creator of the meeting, or faculty (faculty can edit any meeting).
 
 **Path params** — `id`: meeting UUID.
 
@@ -947,16 +928,16 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Body** — send only the fields you want to change. At least one is required.
 
-| Field       | Type          | Notes                                                                                                                                                                        |
-| ----------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `topic`     | string        | 1–200 characters                                                                                                                                                             |
-| `date`      | string        | `YYYY-MM-DD`                                                                                                                                                                 |
-| `startTime` | string        | `HH:mm`                                                                                                                                                                      |
-| `endTime`   | string        | `HH:mm`                                                                                                                                                                      |
-| `note`      | string / null | Pass `null` to clear                                                                                                                                                         |
-| `location`  | string / null | Pass `null` to clear                                                                                                                                                         |
-| `link`      | string / null | Valid URL or `null`                                                                                                                                                          |
-| `teamId`    | string / null | Reassign the meeting's team. Pass a team UUID to change teams (OB: any team; `team_lead`: only a team they lead/co-lead). Pass `null` to convert to an OB meeting — OB only. |
+| Field       | Type          | Notes                                                                                                                                                                                        |
+| ----------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `topic`     | string        | 1–200 characters                                                                                                                                                                             |
+| `date`      | string        | `YYYY-MM-DD`                                                                                                                                                                                 |
+| `startTime` | string        | `HH:mm`                                                                                                                                                                                      |
+| `endTime`   | string        | `HH:mm`                                                                                                                                                                                      |
+| `note`      | string / null | Pass `null` to clear                                                                                                                                                                         |
+| `location`  | string / null | Pass `null` to clear                                                                                                                                                                         |
+| `link`      | string / null | Valid URL or `null`                                                                                                                                                                          |
+| `teamId`    | string / null | Reassign the meeting's team. Pass a team UUID to change teams (OB/faculty: any team; `team_lead`: only a team they lead/co-lead). Pass `null` to convert to an OB meeting — OB/faculty only. |
 
 **Rules:**
 
@@ -968,13 +949,19 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Errors**
 
-| Status | Code               | Reason                                                                                                                                 |
-| ------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | `VALIDATION_ERROR` | No fields sent, bad format, or `endTime` not after `startTime`                                                                         |
-| 403    | `FORBIDDEN`        | Caller is not the creator or an OB; or a `team_lead` passed `teamId: null` (OB-only); or a `team_lead` assigned a team they don't lead |
-| 404    | `NOT_FOUND`        | Meeting not found, or `teamId` doesn't exist                                                                                           |
-| 409    | `CONFLICT`         | Meeting is already cancelled                                                                                                           |
-| 409    | `MEETING_CLASH`    | Time change causes an overlap                                                                                                          |
+| Status | Code               | Reason                                                                                                                                       |
+| ------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | No fields sent, bad format, or `endTime` not after `startTime`                                                                               |
+| 403    | `FORBIDDEN`        | Not the creator or faculty; or `team_lead` trying to convert to OB meeting (`teamId: null`); or `team_lead` assigning a team they don't lead |
+| 404    | `NOT_FOUND`        | Meeting not found, or `teamId` doesn't exist                                                                                                 |
+| 409    | `CONFLICT`         | Meeting is already cancelled                                                                                                                 |
+| 409    | `MEETING_CLASH`    | Time change causes an overlap                                                                                                                |
+
+**403 messages:**
+
+- Not creator/faculty: `"Only the creator or faculty can edit this meeting"`
+- Team lead trying OB meeting: `"Only OBs and faculty can create or change a meeting to an OB meeting"`
+- Team lead with wrong team: `"You can only assign meetings to teams you lead or co-lead"`
 
 ---
 
@@ -982,7 +969,7 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 Soft cancel — sets status to `"cancelled"`. The meeting stays in the database and still appears on the calendar when filtered by `status=cancelled`.
 
-**Auth** — creator of the meeting or `ob`.
+**Auth** — creator of the meeting, or faculty (faculty can cancel any meeting).
 
 **Path params** — `id`: meeting UUID.
 
@@ -992,30 +979,30 @@ No body.
 
 **Errors**
 
-| Status | Code        | Reason                             |
-| ------ | ----------- | ---------------------------------- |
-| 403    | `FORBIDDEN` | Caller is not the creator or an OB |
-| 404    | `NOT_FOUND` | Meeting not found                  |
-| 409    | `CONFLICT`  | Meeting is already cancelled       |
+| Status | Code        | Reason                               |
+| ------ | ----------- | ------------------------------------ |
+| 403    | `FORBIDDEN` | Caller is not the creator or faculty |
+| 404    | `NOT_FOUND` | Meeting not found                    |
+| 409    | `CONFLICT`  | Meeting is already cancelled         |
 
 ---
 
 ### `DELETE /api/v1/meetings/:id`
 
-**Auth** — `ob` only.
+**Auth** — `ob` or `faculty`.
 
 **Path params** — `id`: meeting UUID.
 
-**Hard delete.** Permanently removes the meeting **and all comments on it**.
+**Hard delete.** Permanently removes the meeting
 
 **204 No Content** on success.
 
 **Errors**
 
-| Status | Code        | Reason              |
-| ------ | ----------- | ------------------- |
-| 403    | `FORBIDDEN` | Caller is not an OB |
-| 404    | `NOT_FOUND` | Meeting not found   |
+| Status | Code        | Reason                      |
+| ------ | ----------- | --------------------------- |
+| 403    | `FORBIDDEN` | Caller is not OB or faculty |
+| 404    | `NOT_FOUND` | Meeting not found           |
 
 ---
 
@@ -1026,6 +1013,7 @@ No body.
 Tentative meetings allow admins and team leads to "block" date/time ranges when the exact meeting schedule is not yet confirmed. This helps coordinate scheduling by warning others when they try to book meetings during tentative periods.
 
 **Key Features:**
+
 - **Date ranges**: Specify `startDate` to `endDate` (can be same day or span multiple days)
 - **Optional time ranges**: Can specify `startTime`/`endTime`, or leave blank for all-day
 - **Clash warnings**: Creating regular or tentative meetings during tentative periods triggers a `409` error
@@ -1071,6 +1059,7 @@ Tentative meetings allow admins and team leads to "block" date/time ranges when 
 ```
 
 **Notes:**
+
 - If `startTime`/`endTime` are `null`, the tentative period is all-day
 - Date range is inclusive (`startDate` and `endDate` both included)
 - Default: only `scheduled` tentative meetings are returned
@@ -1087,8 +1076,8 @@ Tentative meetings allow admins and team leads to "block" date/time ranges when 
 
 **Errors**
 
-| Status | Code        | Reason                       |
-| ------ | ----------- | ---------------------------- |
+| Status | Code        | Reason                      |
+| ------ | ----------- | --------------------------- |
 | 404    | `NOT_FOUND` | Tentative meeting not found |
 
 ---
@@ -1099,23 +1088,23 @@ Tentative meetings allow admins and team leads to "block" date/time ranges when 
 
 **Query parameters**
 
-| Param   | Type     | Notes                                       |
-| ------- | -------- | ------------------------------------------- |
+| Param   | Type     | Notes                                        |
+| ------- | -------- | -------------------------------------------- |
 | `force` | `"true"` | Save despite overlaps with existing meetings |
 
 **Body**
 
-| Field       | Type          | Required    | Notes                                                      |
-| ----------- | ------------- | ----------- | ---------------------------------------------------------- |
-| `topic`     | string        | ✅          | 1–200 characters                                            |
-| `startDate` | string        | ✅          | `YYYY-MM-DD`                                                |
-| `endDate`   | string        | ✅          | `YYYY-MM-DD`, must be on or after `startDate`               |
-| `startTime` | string / null | Conditional | `HH:mm`. Must provide both or neither                       |
-| `endTime`   | string / null | Conditional | `HH:mm`, must be after `startTime`                          |
-| `teamId`    | string / null | Conditional | Required for `team_lead`. OBs omit for OB meeting           |
-| `note`      | string        | ❌          | Optional note                                              |
-| `location`  | string        | ❌          | Room or location                                           |
-| `link`      | string        | ❌          | Valid URL                                                  |
+| Field       | Type          | Required    | Notes                                                         |
+| ----------- | ------------- | ----------- | ------------------------------------------------------------- |
+| `topic`     | string        | ✅          | 1–200 characters                                              |
+| `startDate` | string        | ✅          | `YYYY-MM-DD`                                                  |
+| `endDate`   | string        | ✅          | `YYYY-MM-DD`, must be on or after `startDate`                 |
+| `startTime` | string / null | Conditional | `HH:mm`. Must provide both or neither                         |
+| `endTime`   | string / null | Conditional | `HH:mm`, must be after `startTime`                            |
+| `teamId`    | string / null | Conditional | Required for `team_lead`. OBs and faculty omit for OB meeting |
+| `note`      | string        | ❌          | Optional note                                                 |
+| `location`  | string        | ❌          | Room or location                                              |
+| `link`      | string        | ❌          | Valid URL                                                     |
 
 **Rules:**
 
@@ -1126,18 +1115,23 @@ Tentative meetings allow admins and team leads to "block" date/time ranges when 
 
 **Errors**
 
-| Status | Code               | Reason                                                                            |
-| ------ | ------------------ | --------------------------------------------------------------------------------- |
-| 400    | `VALIDATION_ERROR` | Missing field, invalid format, date/time validation failed                         |
-| 403    | `FORBIDDEN`        | Role cannot create, or `team_lead` using team they don't lead                     |
-| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                            |
-| 409    | `MEETING_CLASH`    | Overlaps existing meetings. Use `?force=true` to override                          |
+| Status | Code               | Reason                                                                                    |
+| ------ | ------------------ | ----------------------------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Missing field, invalid format, date/time validation failed                                |
+| 403    | `FORBIDDEN`        | `team_lead` trying to create an OB meeting (no `teamId`), or using a team they don't lead |
+| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                                    |
+| 409    | `MEETING_CLASH`    | Overlaps existing meetings. Use `?force=true` to override                                 |
+
+**403 messages:**
+
+- Team lead without teamId: `"Only OBs and faculty can create or change a tentative meeting to an OB meeting"`
+- Team lead with wrong team: `"You can only assign tentative meetings to teams you lead or co-lead"`
 
 ---
 
 ### `PATCH /api/v1/tentative-meetings/:id`
 
-**Auth** — creator or `ob`.
+**Auth** — creator, or faculty (faculty can edit any tentative meeting).
 
 **Query param** — `force="true"` to update despite overlaps.
 
@@ -1149,7 +1143,7 @@ Tentative meetings allow admins and team leads to "block" date/time ranges when 
 
 ### `POST /api/v1/tentative-meetings/:id/cancel`
 
-**Auth** — creator or `ob`.
+**Auth** — creator, or faculty (faculty can cancel any tentative meeting).
 
 Soft cancel (sets status to `"cancelled"`).
 
@@ -1159,7 +1153,7 @@ Soft cancel (sets status to `"cancelled"`).
 
 ### `DELETE /api/v1/tentative-meetings/:id`
 
-**Auth** — `ob` only.
+**Auth** — `ob` or `faculty`.
 
 Hard delete.
 
@@ -1235,25 +1229,25 @@ Hard delete.
 
 **Rules:**
 
-- If `teamId` is omitted/`null`, only `ob` can create (type becomes `"society"`).
-- If `teamId` is provided, a `team_lead` can only post for a team they lead or co-lead. An `ob` can post for any team.
+- If `teamId` is omitted/`null`, only `ob` or `faculty` can create (type becomes `"society"`).
+- If `teamId` is provided, a `team_lead` can only post for a team they lead or co-lead. An `ob` or `faculty` can post for any team.
 - `type` and `createdBy` are set by the server.
 
 **201 Created** — `data` is the new `Announcement`.
 
 **Errors**
 
-| Status | Code               | Reason                                                                                                             |
-| ------ | ------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 400    | `VALIDATION_ERROR` | Missing title/content, or invalid priority value                                                                   |
-| 403    | `FORBIDDEN`        | Role is not `ob` or `team_lead`; or non-OB trying a society-wide post; or `team_lead` using a team they don't lead |
-| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                                                             |
+| Status | Code               | Reason                                                                                                                     |
+| ------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Missing title/content, or invalid priority value                                                                           |
+| 403    | `FORBIDDEN`        | Role is not `ob` or `team_lead`; or non-OB/faculty trying a society-wide post; or `team_lead` using a team they don't lead |
+| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                                                                     |
 
 ---
 
 ### `PATCH /api/v1/announcements/:id`
 
-**Auth** — creator of the announcement or `ob`.
+**Auth** — creator of the announcement, or faculty (faculty can edit any announcement).
 
 **Path params** — `id`: announcement UUID.
 
@@ -1272,190 +1266,28 @@ Hard delete.
 
 **Errors**
 
-| Status | Code               | Reason                             |
-| ------ | ------------------ | ---------------------------------- |
-| 400    | `VALIDATION_ERROR` | No fields sent, or invalid value   |
-| 403    | `FORBIDDEN`        | Caller is not the creator or an OB |
-| 404    | `NOT_FOUND`        | Announcement not found             |
+| Status | Code               | Reason                               |
+| ------ | ------------------ | ------------------------------------ |
+| 400    | `VALIDATION_ERROR` | No fields sent, or invalid value     |
+| 403    | `FORBIDDEN`        | Caller is not the creator or faculty |
+| 404    | `NOT_FOUND`        | Announcement not found               |
 
 ---
 
 ### `DELETE /api/v1/announcements/:id`
 
-**Auth** — creator of the announcement or `ob`.
+**Auth** — creator of the announcement, or faculty (faculty can delete any announcement).
 
 **Path params** — `id`: announcement UUID.
 
-**Hard delete.** Permanently removes the announcement **and all comments on it**.
-
+**Hard delete.** Permanently removes the announcement
 **204 No Content** on success.
 
 **Errors**
 
-| Status | Code        | Reason                             |
-| ------ | ----------- | ---------------------------------- |
-| 403    | `FORBIDDEN` | Caller is not the creator or an OB |
-| 404    | `NOT_FOUND` | Announcement not found             |
-
----
-
-## Comment routes
-
-Comments exist on announcements and meetings. The read/post endpoints are nested under the parent resource. The edit/delete endpoints live under `/comments/:id`.
-
-### `GET /api/v1/announcements/:id/comments`
-
-**Auth** — any role.
-
-**Path params** — `id`: announcement UUID.
-
-**Query parameters**
-
-| Param             | Type    | Notes                                                                                                                            |
-| ----------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `parentCommentId` | string  | Pass `"null"` to get only top-level comments. Pass a comment UUID to get only replies to that comment. Omit to get all comments. |
-| `page`            | integer | Default `1`                                                                                                                      |
-| `limit`           | integer | Default `20`, max `100`                                                                                                          |
-
-**200 OK** — paginated list sorted by `createdAt` ascending.
-
-```json
-{
-  "items": [ <Comment>, ... ],
-  "pagination": { ... }
-}
-```
-
-**Errors**
-
-| Status | Code        | Reason                 |
-| ------ | ----------- | ---------------------- |
-| 404    | `NOT_FOUND` | Announcement not found |
-
----
-
-### `POST /api/v1/announcements/:id/comments`
-
-**Auth** — any role.
-
-**Path params** — `id`: announcement UUID.
-
-**Body**
-
-| Field             | Type          | Required | Notes                                                                                  |
-| ----------------- | ------------- | -------- | -------------------------------------------------------------------------------------- |
-| `content`         | string        | ✅       | 1–1000 characters                                                                      |
-| `parentCommentId` | string / null | ❌       | UUID of the comment being replied to. Must be a top-level comment on this announcement |
-
-**Nesting rule:** Only one level of replies is allowed. Attempting to reply to a reply returns `400`.
-
-**201 Created** — `data` is the new `Comment`.
-
-**Errors**
-
-| Status | Code               | Reason                                                                          |
-| ------ | ------------------ | ------------------------------------------------------------------------------- |
-| 400    | `VALIDATION_ERROR` | Empty content, or `parentCommentId` is itself a reply                           |
-| 404    | `NOT_FOUND`        | Announcement not found, or `parentCommentId` doesn't exist on this announcement |
-
----
-
-### `GET /api/v1/meetings/:id/comments`
-
-**Auth** — any role.
-
-**Path params** — `id`: meeting UUID.
-
-**Query parameters** — same as `GET /announcements/:id/comments` above.
-
-**200 OK** — paginated list sorted by `createdAt` ascending.
-
-**Errors**
-
-| Status | Code        | Reason            |
-| ------ | ----------- | ----------------- |
-| 404    | `NOT_FOUND` | Meeting not found |
-
----
-
-### `POST /api/v1/meetings/:id/comments`
-
-**Auth** — any role.
-
-**Path params** — `id`: meeting UUID.
-
-**Body** — same as `POST /announcements/:id/comments` above.
-
-Comments can be posted on cancelled meetings.
-
-**201 Created** — `data` is the new `Comment`.
-
-**Errors**
-
-| Status | Code               | Reason                                                                |
-| ------ | ------------------ | --------------------------------------------------------------------- |
-| 400    | `VALIDATION_ERROR` | Empty content, or `parentCommentId` is a reply                        |
-| 404    | `NOT_FOUND`        | Meeting not found, or `parentCommentId` doesn't exist on this meeting |
-
----
-
-### `GET /api/v1/comments/:id`
-
-**Auth** — any role.
-
-**Path params** — `id`: comment UUID.
-
-**200 OK** — `data` is a `Comment` object.
-
-**Errors**
-
-| Status | Code        | Reason            |
-| ------ | ----------- | ----------------- |
-| 404    | `NOT_FOUND` | Comment not found |
-
----
-
-### `PATCH /api/v1/comments/:id`
-
-**Auth** — author of the comment only (any role, but must be the creator).
-
-**Path params** — `id`: comment UUID.
-
-**Body**
-
-| Field     | Type   | Required | Notes             |
-| --------- | ------ | -------- | ----------------- |
-| `content` | string | ✅       | 1–1000 characters |
-
-`updatedAt` is set automatically.
-
-**200 OK** — `data` is the updated `Comment`.
-
-**Errors**
-
-| Status | Code               | Reason                   |
-| ------ | ------------------ | ------------------------ |
-| 400    | `VALIDATION_ERROR` | Missing or empty content |
-| 403    | `FORBIDDEN`        | Caller is not the author |
-| 404    | `NOT_FOUND`        | Comment not found        |
-
----
-
-### `DELETE /api/v1/comments/:id`
-
-**Auth** — author of the comment, or `ob` (for moderation).
-
-**Path params** — `id`: comment UUID.
-
-**Hard delete.** If deleting a top-level comment, all replies to it are automatically deleted too.
-
-**204 No Content** on success.
-
-**Errors**
-
-| Status | Code        | Reason                            |
-| ------ | ----------- | --------------------------------- |
-| 403    | `FORBIDDEN` | Caller is not the author or an OB |
-| 404    | `NOT_FOUND` | Comment not found                 |
+| Status | Code        | Reason                               |
+| ------ | ----------- | ------------------------------------ |
+| 403    | `FORBIDDEN` | Caller is not the creator or faculty |
+| 404    | `NOT_FOUND` | Announcement not found               |
 
 ---

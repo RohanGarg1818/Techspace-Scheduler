@@ -3,7 +3,7 @@ import db from "../db/index.js";
 /**
  * Checks if a date range overlaps with any existing tentative meetings
  * or regular meetings (for warning purposes only, not blocking)
- * 
+ *
  * @param {object} params
  * @param {string} params.startDate - Start date (YYYY-MM-DD)
  * @param {string} params.endDate - End date (YYYY-MM-DD)
@@ -21,8 +21,10 @@ export const findTentativeMeetingOverlaps = async ({
 }) => {
   const allMeetings = await db.getAllMeetings();
   const regularClashes = allMeetings.filter((m) => {
-    if (m.status !== "scheduled") {return false;}
-    
+    if (m.status !== "scheduled") {
+      return false;
+    }
+
     if (m.date < startDate || m.date > endDate) {
       return false;
     }
@@ -36,7 +38,9 @@ export const findTentativeMeetingOverlaps = async ({
 
   const allTentativeMeetings = await db.getAllTentativeMeetings();
   const tentativeClashes = allTentativeMeetings.filter((tm) => {
-    if (tm.status !== "scheduled") {return false;}
+    if (tm.status !== "scheduled") {
+      return false;
+    }
     if (excludeTentativeMeetingId && tm.id === excludeTentativeMeetingId) {
       return false;
     }
@@ -69,8 +73,12 @@ export const isEndDateAfterStartDate = (startDate, endDate) => {
  * Validates that if time is provided, both startTime and endTime must be present
  */
 export const isTimeRangeValid = (startTime, endTime) => {
-  if (!startTime && !endTime) {return true;}
-  if (startTime && endTime) {return true;}
+  if (!startTime && !endTime) {
+    return true;
+  }
+  if (startTime && endTime) {
+    return true;
+  }
   return false;
 };
 
@@ -78,6 +86,8 @@ export const isTimeRangeValid = (startTime, endTime) => {
  * Validates that endTime is after startTime
  */
 export const isEndTimeAfterStartTime = (startTime, endTime) => {
-  if (!startTime || !endTime) {return true;}
+  if (!startTime || !endTime) {
+    return true;
+  }
   return startTime < endTime;
 };

@@ -4,13 +4,13 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import {
   ErrorCodeEnum,
-  UserRolesEnum,
   TeamTypeEnum,
   MeetingTypeEnum,
   MeetingColorEnum,
   MeetingStatusEnum,
 } from "../utils/constants.js";
-import { userLeadsTeam } from "../utils/userUtils.js";
+import { assertOwnerOrRole, assertTeamScope } from "../utils/access.js";
+import { RULES } from "../config/permissions.js";
 import {
   isEndTimeAfterStartTime,
   findMeetingClashes,
@@ -143,7 +143,6 @@ export const checkMeetingClash = asyncHandler(async (req, res) => {
 export const createMeeting = asyncHandler(async (req, res) => {
   const { topic, date, startTime, endTime, teamId, note, location, link } =
     req.body;
-  const isTeamLead = req.user.role === UserRolesEnum.TEAM_LEAD;
 
   if (!isEndTimeAfterStartTime(startTime, endTime)) {
     throw new ApiError(
@@ -153,24 +152,7 @@ export const createMeeting = asyncHandler(async (req, res) => {
     );
   }
 
-  // Team lead rules: teamId is required and must be a team they lead
-  if (isTeamLead) {
-    if (!teamId) {
-      throw new ApiError(
-        400,
-        ErrorCodeEnum.VALIDATION_ERROR,
-        "teamId is required for team leads",
-      );
-    }
-
-    if (!userLeadsTeam(req.user, teamId)) {
-      throw new ApiError(
-        403,
-        ErrorCodeEnum.FORBIDDEN,
-        "You can only create meetings for teams you lead or co-lead",
-      );
-    }
-  }
+  assertTeamScope(req.user, "meetings", teamId);
 
   // Resolve team, type, and color
   let meetingType;
@@ -196,19 +178,29 @@ export const createMeeting = asyncHandler(async (req, res) => {
 
   // Clash check unless acknowledged or forced
   if (req.query.acknowledgeClash !== "true" && req.query.force !== "true") {
-    const regularClashes = await findMeetingClashes({ date, startTime, endTime });
-    
-    const { tentativeClashes } = await db.getAllTentativeMeetings().then(tentatives => {
-      const overlapping = tentatives.filter(tm => {
-        if (tm.status !== "scheduled") {return false;}
-        if (date < tm.startDate || date > tm.endDate) {return false;}
-        if (tm.startTime && tm.endTime) {
-          return startTime < tm.endTime && endTime > tm.startTime;
-        }
-        return true;
-      });
-      return { tentativeClashes: overlapping };
+    const regularClashes = await findMeetingClashes({
+      date,
+      startTime,
+      endTime,
     });
+
+    const { tentativeClashes } = await db
+      .getAllTentativeMeetings()
+      .then((tentatives) => {
+        const overlapping = tentatives.filter((tm) => {
+          if (tm.status !== "scheduled") {
+            return false;
+          }
+          if (date < tm.startDate || date > tm.endDate) {
+            return false;
+          }
+          if (tm.startTime && tm.endTime) {
+            return startTime < tm.endTime && endTime > tm.startTime;
+          }
+          return true;
+        });
+        return { tentativeClashes: overlapping };
+      });
 
     const totalClashes = regularClashes.length + tentativeClashes.length;
     if (totalClashes > 0) {
@@ -216,8 +208,8 @@ export const createMeeting = asyncHandler(async (req, res) => {
         409,
         ErrorCodeEnum.MEETING_CLASH,
         `This meeting overlaps with ${regularClashes.length} regular meeting(s) and ${tentativeClashes.length} tentative meeting(s). Use ?force=true to save anyway.`,
-        { 
-          regularClashes, 
+        {
+          regularClashes,
           tentativeClashes,
           hint: "Add ?force=true query parameter to save despite overlaps",
         },
@@ -261,18 +253,12 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Meeting not found");
   }
 
-  const isOB = req.user.role === UserRolesEnum.OB;
-  const isCreator = meeting.createdBy && meeting.createdBy.id === req.user.id;
+  assertOwnerOrRole(req.user, "meetings.update", meeting.createdBy?.id);
 
-  if (!isOB && !isCreator) {
-    throw new ApiError(
-      403,
-      ErrorCodeEnum.FORBIDDEN,
-      "Only the creator or an OB can edit this meeting",
-    );
-  }
-
-  if (meeting.status === MeetingStatusEnum.CANCELLED) {
+  if (
+    meeting.status === MeetingStatusEnum.CANCELLED &&
+    !RULES.meetings.allowEditCancelled
+  ) {
     throw new ApiError(
       409,
       ErrorCodeEnum.CONFLICT,
@@ -315,13 +301,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   let teamUpdates = {};
   if (teamId !== undefined) {
     if (teamId === null) {
-      if (!isOB) {
-        throw new ApiError(
-          403,
-          ErrorCodeEnum.FORBIDDEN,
-          "Only OBs can create or change a meeting to an OB meeting",
-        );
-      }
+      assertTeamScope(req.user, "meetings", null);
       teamUpdates = {
         team: null,
         type: MeetingTypeEnum.OB,
@@ -333,15 +313,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
         throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Team not found");
       }
 
-      if (!isOB) {
-        if (!userLeadsTeam(req.user, teamId)) {
-          throw new ApiError(
-            403,
-            ErrorCodeEnum.FORBIDDEN,
-            "You can only assign meetings to teams you lead or co-lead",
-          );
-        }
-      }
+      assertTeamScope(req.user, "meetings", team.id);
 
       teamUpdates = {
         team: { id: team.id, name: team.name },
@@ -360,7 +332,11 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     finalStartTime === meeting.startTime &&
     finalEndTime === meeting.endTime;
 
-  if (!timeUnchanged && req.query.acknowledgeClash !== "true" && req.query.force !== "true") {
+  if (
+    !timeUnchanged &&
+    req.query.acknowledgeClash !== "true" &&
+    req.query.force !== "true"
+  ) {
     const regularClashes = await findMeetingClashes({
       date: finalDate,
       startTime: finalStartTime,
@@ -368,17 +344,23 @@ export const updateMeeting = asyncHandler(async (req, res) => {
       excludeMeetingId: meeting.id,
     });
 
-    const { tentativeClashes } = await db.getAllTentativeMeetings().then(tentatives => {
-      const overlapping = tentatives.filter(tm => {
-        if (tm.status !== "scheduled") {return false;}
-        if (finalDate < tm.startDate || finalDate > tm.endDate) {return false;}
-        if (tm.startTime && tm.endTime) {
-          return finalStartTime < tm.endTime && finalEndTime > tm.startTime;
-        }
-        return true;
+    const { tentativeClashes } = await db
+      .getAllTentativeMeetings()
+      .then((tentatives) => {
+        const overlapping = tentatives.filter((tm) => {
+          if (tm.status !== "scheduled") {
+            return false;
+          }
+          if (finalDate < tm.startDate || finalDate > tm.endDate) {
+            return false;
+          }
+          if (tm.startTime && tm.endTime) {
+            return finalStartTime < tm.endTime && finalEndTime > tm.startTime;
+          }
+          return true;
+        });
+        return { tentativeClashes: overlapping };
       });
-      return { tentativeClashes: overlapping };
-    });
 
     const totalClashes = regularClashes.length + tentativeClashes.length;
     if (totalClashes > 0) {
@@ -386,8 +368,8 @@ export const updateMeeting = asyncHandler(async (req, res) => {
         409,
         ErrorCodeEnum.MEETING_CLASH,
         `This meeting overlaps with ${regularClashes.length} regular meeting(s) and ${tentativeClashes.length} tentative meeting(s). Use ?force=true to update anyway.`,
-        { 
-          regularClashes, 
+        {
+          regularClashes,
           tentativeClashes,
           hint: "Add ?force=true query parameter to update despite overlaps",
         },
@@ -428,16 +410,7 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Meeting not found");
   }
 
-  const isOB = req.user.role === UserRolesEnum.OB;
-  const isCreator = meeting.createdBy && meeting.createdBy.id === req.user.id;
-
-  if (!isOB && !isCreator) {
-    throw new ApiError(
-      403,
-      ErrorCodeEnum.FORBIDDEN,
-      "Only the creator or an OB can cancel this meeting",
-    );
-  }
+  assertOwnerOrRole(req.user, "meetings.cancel", meeting.createdBy?.id);
 
   if (meeting.status === MeetingStatusEnum.CANCELLED) {
     throw new ApiError(
@@ -460,7 +433,7 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
 
 /**
  * DELETE /api/v1/meetings/:id (OB only)
- * Hard deletes the meeting and all associated comments
+ * Hard deletes the meeting
  */
 export const deleteMeeting = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -468,14 +441,6 @@ export const deleteMeeting = asyncHandler(async (req, res) => {
   const meeting = await db.getMeetingById(id);
   if (!meeting) {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Meeting not found");
-  }
-
-  // Delete all comments associated with this meeting
-  const allComments = await db.getAllComments();
-  for (const c of allComments) {
-    if (c.meetingId === id) {
-      await db.deleteComment(c.id);
-    }
   }
 
   await db.deleteMeeting(id);

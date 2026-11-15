@@ -41,6 +41,7 @@ export const formatUserResponse = async (user) => {
   const {
     password: _password,
     deletedAt: _deletedAt,
+    passwordChangedAt: _passwordChangedAt,
     ...userWithoutPassword
   } = user;
 

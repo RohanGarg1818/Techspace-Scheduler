@@ -1,10 +1,9 @@
 import { Router } from "express";
 import { getDashboardData } from "../controllers/dashboard.controllers.js";
-import { authenticate } from "../middlewares/auth.middleware.js";
+import { authenticate, can } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-// Authenticated users can view the dashboard
-router.get("/", authenticate, getDashboardData);
+router.get("/", authenticate, can("dashboard.view"), getDashboardData);
 
 export default router;
