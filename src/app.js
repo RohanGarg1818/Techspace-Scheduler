@@ -7,6 +7,7 @@ import userRouter from "./routes/user.routes.js";
 import teamRouter from "./routes/team.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 import meetingRouter from "./routes/meeting.routes.js";
+import tentativeMeetingRouter from "./routes/tentativeMeeting.routes.js";
 import announcementRouter from "./routes/announcement.routes.js";
 import commentRouter from "./routes/comment.routes.js";
 
@@ -37,6 +38,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/teams", teamRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/meetings", meetingRouter);
+app.use("/api/v1/tentative-meetings", tentativeMeetingRouter);
 app.use("/api/v1/announcements", announcementRouter);
 app.use("/api/v1/comments", commentRouter);
 

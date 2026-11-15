@@ -194,16 +194,33 @@ export const createMeeting = asyncHandler(async (req, res) => {
     meetingColor = MeetingColorEnum.OB;
   }
 
-  // Clash check unless acknowledged
-  if (req.query.acknowledgeClash !== "true") {
-    const clashes = await findMeetingClashes({ date, startTime, endTime });
+  // Clash check unless acknowledged or forced
+  if (req.query.acknowledgeClash !== "true" && req.query.force !== "true") {
+    const regularClashes = await findMeetingClashes({ date, startTime, endTime });
+    
+    const { tentativeClashes } = await db.getAllTentativeMeetings().then(tentatives => {
+      const overlapping = tentatives.filter(tm => {
+        if (tm.status !== "scheduled") {return false;}
+        if (date < tm.startDate || date > tm.endDate) {return false;}
+        if (tm.startTime && tm.endTime) {
+          return startTime < tm.endTime && endTime > tm.startTime;
+        }
+        return true;
+      });
+      return { tentativeClashes: overlapping };
+    });
 
-    if (clashes.length > 0) {
+    const totalClashes = regularClashes.length + tentativeClashes.length;
+    if (totalClashes > 0) {
       throw new ApiError(
         409,
         ErrorCodeEnum.MEETING_CLASH,
-        `This overlaps with ${clashes.length} meeting${clashes.length > 1 ? "s" : ""}`,
-        { clashes },
+        `This meeting overlaps with ${regularClashes.length} regular meeting(s) and ${tentativeClashes.length} tentative meeting(s). Use ?force=true to save anyway.`,
+        { 
+          regularClashes, 
+          tentativeClashes,
+          hint: "Add ?force=true query parameter to save despite overlaps",
+        },
       );
     }
   }
@@ -337,26 +354,43 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     }
   }
 
-  // Clash check unless acknowledged, or unless date/time are unchanged
+  // Clash check unless acknowledged/forced, or unless date/time are unchanged
   const timeUnchanged =
     finalDate === meeting.date &&
     finalStartTime === meeting.startTime &&
     finalEndTime === meeting.endTime;
 
-  if (!timeUnchanged && req.query.acknowledgeClash !== "true") {
-    const clashes = await findMeetingClashes({
+  if (!timeUnchanged && req.query.acknowledgeClash !== "true" && req.query.force !== "true") {
+    const regularClashes = await findMeetingClashes({
       date: finalDate,
       startTime: finalStartTime,
       endTime: finalEndTime,
       excludeMeetingId: meeting.id,
     });
 
-    if (clashes.length > 0) {
+    const { tentativeClashes } = await db.getAllTentativeMeetings().then(tentatives => {
+      const overlapping = tentatives.filter(tm => {
+        if (tm.status !== "scheduled") {return false;}
+        if (finalDate < tm.startDate || finalDate > tm.endDate) {return false;}
+        if (tm.startTime && tm.endTime) {
+          return finalStartTime < tm.endTime && finalEndTime > tm.startTime;
+        }
+        return true;
+      });
+      return { tentativeClashes: overlapping };
+    });
+
+    const totalClashes = regularClashes.length + tentativeClashes.length;
+    if (totalClashes > 0) {
       throw new ApiError(
         409,
         ErrorCodeEnum.MEETING_CLASH,
-        `This overlaps with ${clashes.length} meeting${clashes.length > 1 ? "s" : ""}`,
-        { clashes },
+        `This meeting overlaps with ${regularClashes.length} regular meeting(s) and ${tentativeClashes.length} tentative meeting(s). Use ?force=true to update anyway.`,
+        { 
+          regularClashes, 
+          tentativeClashes,
+          hint: "Add ?force=true query parameter to update despite overlaps",
+        },
       );
     }
   }

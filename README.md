@@ -18,9 +18,10 @@ A meeting calendar and coordination backend for a tech society.
 11. [Team routes](#team-routes)
 12. [Dashboard route](#dashboard-route)
 13. [Meeting routes](#meeting-routes)
-14. [Announcement routes](#announcement-routes)
-15. [Comment routes](#comment-routes)
-16. [Seed credentials](#seed-credentials)
+14. [Tentative Meeting routes](#tentative-meeting-routes)
+15. [Announcement routes](#announcement-routes)
+16. [Comment routes](#comment-routes)
+17. [Seed credentials](#seed-credentials)
 
 ---
 
@@ -888,9 +889,10 @@ Live clash check without saving anything. Use this to show a warning while the u
 
 **Query parameters**
 
-| Param              | Type     | Notes                              |
-| ------------------ | -------- | ---------------------------------- |
-| `acknowledgeClash` | `"true"` | Pass to force-save despite a clash |
+| Param              | Type     | Notes                                      |
+| ------------------ | -------- | ------------------------------------------ |
+| `acknowledgeClash` | `"true"` | Force-save despite clash (alias: `force`)  |
+| `force`            | `"true"` | Same as `acknowledgeClash` (both accepted) |
 
 **Body**
 
@@ -912,7 +914,9 @@ Live clash check without saving anything. Use this to show a warning while the u
 - A `team_lead` must supply a `teamId` for a team they lead or co-lead.
 - An OB can create either an OB meeting (no `teamId`) or a team meeting (with `teamId`).
 - If `endTime` is not strictly after `startTime`, returns `400`.
-- Clash check: if the time overlaps any existing scheduled meeting on that date, returns `409 MEETING_CLASH`. The frontend can then resend with `?acknowledgeClash=true` to override.
+- **Clash check**: Returns `409` if the time overlaps any scheduled meeting (regular or tentative) on that date
+- **Tentative overlap**: Also checks against tentative meetings - returns `409` if date/time falls within tentative range
+- Use `?force=true` or `?acknowledgeClash=true` to override and save anyway
 
 **Overlap rule:** `newStart < existingEnd AND newEnd > existingStart AND existing.status == "scheduled"`
 
@@ -1012,6 +1016,154 @@ No body.
 | ------ | ----------- | ------------------- |
 | 403    | `FORBIDDEN` | Caller is not an OB |
 | 404    | `NOT_FOUND` | Meeting not found   |
+
+---
+
+## Tentative Meeting routes
+
+**What are Tentative Meetings?**
+
+Tentative meetings allow admins and team leads to "block" date/time ranges when the exact meeting schedule is not yet confirmed. This helps coordinate scheduling by warning others when they try to book meetings during tentative periods.
+
+**Key Features:**
+- **Date ranges**: Specify `startDate` to `endDate` (can be same day or span multiple days)
+- **Optional time ranges**: Can specify `startTime`/`endTime`, or leave blank for all-day
+- **Clash warnings**: Creating regular or tentative meetings during tentative periods triggers a `409` error
+- **Force override**: Use `?force=true` to save anyway despite overlaps
+- **Bidirectional**: Regular meetings also check for tentative meeting clashes
+
+### `GET /api/v1/tentative-meetings`
+
+**Auth** — any role.
+
+**Query parameters**
+
+| Param    | Type   | Required | Notes                                                  |
+| -------- | ------ | -------- | ------------------------------------------------------ |
+| `from`   | string | ❌       | Filter: tentative meetings overlapping this date range |
+| `to`     | string | ❌       | Must be used with `from`. Format: `YYYY-MM-DD`         |
+| `teamId` | string | ❌       | Filter by team                                         |
+| `status` | string | ❌       | `"scheduled"` (default), `"cancelled"`, or `"all"`     |
+
+**200 OK** — `data.items` is an array of `TentativeMeeting` objects.
+
+**Tentative Meeting shape:**
+
+```json
+{
+  "id": "uuid",
+  "type": "ob" | "core" | "subclub",
+  "color": "#1E3A8A",
+  "team": { "id": "uuid", "name": "string" } | null,
+  "topic": "Planning Week",
+  "startDate": "2026-11-20",
+  "endDate": "2026-11-25",
+  "startTime": "14:00" | null,
+  "endTime": "16:00" | null,
+  "note": "string" | null,
+  "location": "string" | null,
+  "link": "string" | null,
+  "status": "scheduled" | "cancelled",
+  "createdBy": { "id": "uuid", "name": "string" },
+  "createdAt": "2026-11-15T10:00:00.000Z",
+  "updatedAt": "2026-11-15T12:00:00.000Z" | null
+}
+```
+
+**Notes:**
+- If `startTime`/`endTime` are `null`, the tentative period is all-day
+- Date range is inclusive (`startDate` and `endDate` both included)
+- Default: only `scheduled` tentative meetings are returned
+
+---
+
+### `GET /api/v1/tentative-meetings/:id`
+
+**Auth** — any role.
+
+**Path params** — `id`: tentative meeting UUID.
+
+**200 OK** — `data` is a `TentativeMeeting` object.
+
+**Errors**
+
+| Status | Code        | Reason                       |
+| ------ | ----------- | ---------------------------- |
+| 404    | `NOT_FOUND` | Tentative meeting not found |
+
+---
+
+### `POST /api/v1/tentative-meetings`
+
+**Auth** — `ob` or `team_lead`.
+
+**Query parameters**
+
+| Param   | Type     | Notes                                       |
+| ------- | -------- | ------------------------------------------- |
+| `force` | `"true"` | Save despite overlaps with existing meetings |
+
+**Body**
+
+| Field       | Type          | Required    | Notes                                                      |
+| ----------- | ------------- | ----------- | ---------------------------------------------------------- |
+| `topic`     | string        | ✅          | 1–200 characters                                            |
+| `startDate` | string        | ✅          | `YYYY-MM-DD`                                                |
+| `endDate`   | string        | ✅          | `YYYY-MM-DD`, must be on or after `startDate`               |
+| `startTime` | string / null | Conditional | `HH:mm`. Must provide both or neither                       |
+| `endTime`   | string / null | Conditional | `HH:mm`, must be after `startTime`                          |
+| `teamId`    | string / null | Conditional | Required for `team_lead`. OBs omit for OB meeting           |
+| `note`      | string        | ❌          | Optional note                                              |
+| `location`  | string        | ❌          | Room or location                                           |
+| `link`      | string        | ❌          | Valid URL                                                  |
+
+**Rules:**
+
+- Clash check returns `409` if overlapping scheduled meetings/tentatives exist
+- Use `?force=true` to override and save anyway
+
+**201 Created** — includes tentative meeting + `warning` + `overlaps` details if forced.
+
+**Errors**
+
+| Status | Code               | Reason                                                                            |
+| ------ | ------------------ | --------------------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR` | Missing field, invalid format, date/time validation failed                         |
+| 403    | `FORBIDDEN`        | Role cannot create, or `team_lead` using team they don't lead                     |
+| 404    | `NOT_FOUND`        | `teamId` doesn't exist                                                            |
+| 409    | `MEETING_CLASH`    | Overlaps existing meetings. Use `?force=true` to override                          |
+
+---
+
+### `PATCH /api/v1/tentative-meetings/:id`
+
+**Auth** — creator or `ob`.
+
+**Query param** — `force="true"` to update despite overlaps.
+
+**Body** — partial update (at least one field required).
+
+**200 OK** — updated tentative meeting + warnings/overlaps if applicable.
+
+---
+
+### `POST /api/v1/tentative-meetings/:id/cancel`
+
+**Auth** — creator or `ob`.
+
+Soft cancel (sets status to `"cancelled"`).
+
+**200 OK** — cancelled tentative meeting.
+
+---
+
+### `DELETE /api/v1/tentative-meetings/:id`
+
+**Auth** — `ob` only.
+
+Hard delete.
+
+**204 No Content** — successful deletion.
 
 ---
 

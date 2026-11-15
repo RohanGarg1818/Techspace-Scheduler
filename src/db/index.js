@@ -4,6 +4,7 @@ import * as teams from "./teams.repo.js";
 import * as meetings from "./meetings.repo.js";
 import * as announcements from "./announcements.repo.js";
 import * as comments from "./comments.repo.js";
+import * as tentativeMeetings from "./tentativeMeetings.repo.js";
 
 const db = {
   ...users,
@@ -11,6 +12,7 @@ const db = {
   ...meetings,
   ...announcements,
   ...comments,
+  ...tentativeMeetings,
   query,
   withTransaction,
   getClient: () => getPool().connect(),
