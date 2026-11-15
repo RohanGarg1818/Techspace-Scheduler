@@ -6,6 +6,12 @@ import { UserRolesEnum, TeamTypeEnum, TeamPositionEnum } from "./constants.js";
 export const seedDatabase = async () => {
   console.log("Seeding database...");
 
+  const existingUsers = await db.getAllUsers();
+  if (existingUsers.length > 0) {
+    console.log("Database already contains data. Skipping seed.");
+    return;
+  }
+
   const techTeam = {
     id: uuidv4(),
     name: "Tech Team",
