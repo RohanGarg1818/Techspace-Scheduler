@@ -20,8 +20,6 @@ A meeting calendar and coordination backend for a tech society.
 13. [Meeting routes](#meeting-routes)
 14. [Tentative Meeting routes](#tentative-meeting-routes)
 15. [Announcement routes](#announcement-routes)
-16. [Comment routes](#comment-routes)
-17. [Seed credentials](#seed-credentials)
 
 ---
 
@@ -147,8 +145,6 @@ Every route except `POST /auth/login` requires a valid JWT token in the `Authori
 | Delete meeting permanently       | ✅     | ❌      | ❌        | ❌               | ❌     |
 | Create announcement              | ✅     | ❌      | ❌        | ✅ own team only | ❌     |
 | Edit / delete announcement       | ✅ any | ❌      | ❌        | ✅ own creations | ❌     |
-| Post / edit / delete own comment | ✅     | ✅      | ✅        | ✅               | ✅     |
-| Delete any comment (moderation)  | ✅     | ❌      | ❌        | ❌               | ❌     |
 | Change own password              | ✅     | ✅      | ✅        | ✅               | ✅     |
 
 ---
@@ -310,26 +306,6 @@ The detail view (`GET /teams/:id`) adds a `members` array:
 `type` is set by the server: `"society"` when no `teamId`, `"team"` otherwise.  
 `updatedAt` is `null` until the first edit.
 
-### Comment
-
-```json
-{
-  "id": "uuid",
-  "announcementId": "uuid",
-  "meetingId": null,
-  "content": "Will the files be shared?",
-  "parentCommentId": null,
-  "createdBy": { "id": "uuid", "name": "Riya Sharma" },
-  "createdAt": "2026-11-20T11:00:00.000Z",
-  "updatedAt": null
-}
-```
-
-Exactly one of `announcementId` / `meetingId` is set; the other is `null`.  
-`parentCommentId` is `null` for top-level comments and a UUID for replies.  
-Threads are **one level deep only** — you cannot reply to a reply.
-
----
 
 ## Auth routes
 
@@ -531,7 +507,7 @@ Soft-deleted users never appear.
 
 **Path params** — `id`: user UUID.
 
-**Soft delete** — sets a `deletedAt` timestamp. The user can no longer log in and is hidden from all list responses. Their meetings, announcements, and comments remain intact and still show their name.
+**Soft delete** — sets a `deletedAt` timestamp. The user can no longer log in and is hidden from all list responses. Their meetings, announcements
 
 The user is automatically removed from all teams on deletion.
 
@@ -1006,7 +982,7 @@ No body.
 
 **Path params** — `id`: meeting UUID.
 
-**Hard delete.** Permanently removes the meeting **and all comments on it**.
+**Hard delete.** Permanently removes the meeting
 
 **204 No Content** on success.
 
@@ -1286,8 +1262,7 @@ Hard delete.
 
 **Path params** — `id`: announcement UUID.
 
-**Hard delete.** Permanently removes the announcement **and all comments on it**.
-
+**Hard delete.** Permanently removes the announcement 
 **204 No Content** on success.
 
 **Errors**
@@ -1299,163 +1274,3 @@ Hard delete.
 
 ---
 
-## Comment routes
-
-Comments exist on announcements and meetings. The read/post endpoints are nested under the parent resource. The edit/delete endpoints live under `/comments/:id`.
-
-### `GET /api/v1/announcements/:id/comments`
-
-**Auth** — any role.
-
-**Path params** — `id`: announcement UUID.
-
-**Query parameters**
-
-| Param             | Type    | Notes                                                                                                                            |
-| ----------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `parentCommentId` | string  | Pass `"null"` to get only top-level comments. Pass a comment UUID to get only replies to that comment. Omit to get all comments. |
-| `page`            | integer | Default `1`                                                                                                                      |
-| `limit`           | integer | Default `20`, max `100`                                                                                                          |
-
-**200 OK** — paginated list sorted by `createdAt` ascending.
-
-```json
-{
-  "items": [ <Comment>, ... ],
-  "pagination": { ... }
-}
-```
-
-**Errors**
-
-| Status | Code        | Reason                 |
-| ------ | ----------- | ---------------------- |
-| 404    | `NOT_FOUND` | Announcement not found |
-
----
-
-### `POST /api/v1/announcements/:id/comments`
-
-**Auth** — any role.
-
-**Path params** — `id`: announcement UUID.
-
-**Body**
-
-| Field             | Type          | Required | Notes                                                                                  |
-| ----------------- | ------------- | -------- | -------------------------------------------------------------------------------------- |
-| `content`         | string        | ✅       | 1–1000 characters                                                                      |
-| `parentCommentId` | string / null | ❌       | UUID of the comment being replied to. Must be a top-level comment on this announcement |
-
-**Nesting rule:** Only one level of replies is allowed. Attempting to reply to a reply returns `400`.
-
-**201 Created** — `data` is the new `Comment`.
-
-**Errors**
-
-| Status | Code               | Reason                                                                          |
-| ------ | ------------------ | ------------------------------------------------------------------------------- |
-| 400    | `VALIDATION_ERROR` | Empty content, or `parentCommentId` is itself a reply                           |
-| 404    | `NOT_FOUND`        | Announcement not found, or `parentCommentId` doesn't exist on this announcement |
-
----
-
-### `GET /api/v1/meetings/:id/comments`
-
-**Auth** — any role.
-
-**Path params** — `id`: meeting UUID.
-
-**Query parameters** — same as `GET /announcements/:id/comments` above.
-
-**200 OK** — paginated list sorted by `createdAt` ascending.
-
-**Errors**
-
-| Status | Code        | Reason            |
-| ------ | ----------- | ----------------- |
-| 404    | `NOT_FOUND` | Meeting not found |
-
----
-
-### `POST /api/v1/meetings/:id/comments`
-
-**Auth** — any role.
-
-**Path params** — `id`: meeting UUID.
-
-**Body** — same as `POST /announcements/:id/comments` above.
-
-Comments can be posted on cancelled meetings.
-
-**201 Created** — `data` is the new `Comment`.
-
-**Errors**
-
-| Status | Code               | Reason                                                                |
-| ------ | ------------------ | --------------------------------------------------------------------- |
-| 400    | `VALIDATION_ERROR` | Empty content, or `parentCommentId` is a reply                        |
-| 404    | `NOT_FOUND`        | Meeting not found, or `parentCommentId` doesn't exist on this meeting |
-
----
-
-### `GET /api/v1/comments/:id`
-
-**Auth** — any role.
-
-**Path params** — `id`: comment UUID.
-
-**200 OK** — `data` is a `Comment` object.
-
-**Errors**
-
-| Status | Code        | Reason            |
-| ------ | ----------- | ----------------- |
-| 404    | `NOT_FOUND` | Comment not found |
-
----
-
-### `PATCH /api/v1/comments/:id`
-
-**Auth** — author of the comment only (any role, but must be the creator).
-
-**Path params** — `id`: comment UUID.
-
-**Body**
-
-| Field     | Type   | Required | Notes             |
-| --------- | ------ | -------- | ----------------- |
-| `content` | string | ✅       | 1–1000 characters |
-
-`updatedAt` is set automatically.
-
-**200 OK** — `data` is the updated `Comment`.
-
-**Errors**
-
-| Status | Code               | Reason                   |
-| ------ | ------------------ | ------------------------ |
-| 400    | `VALIDATION_ERROR` | Missing or empty content |
-| 403    | `FORBIDDEN`        | Caller is not the author |
-| 404    | `NOT_FOUND`        | Comment not found        |
-
----
-
-### `DELETE /api/v1/comments/:id`
-
-**Auth** — author of the comment, or `ob` (for moderation).
-
-**Path params** — `id`: comment UUID.
-
-**Hard delete.** If deleting a top-level comment, all replies to it are automatically deleted too.
-
-**204 No Content** on success.
-
-**Errors**
-
-| Status | Code        | Reason                            |
-| ------ | ----------- | --------------------------------- |
-| 403    | `FORBIDDEN` | Caller is not the author or an OB |
-| 404    | `NOT_FOUND` | Comment not found                 |
-
----

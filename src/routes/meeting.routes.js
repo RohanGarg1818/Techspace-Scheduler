@@ -9,10 +9,6 @@ import {
   deleteMeeting,
 } from "../controllers/meeting.controllers.js";
 import {
-  getMeetingComments,
-  createMeetingComment,
-} from "../controllers/comment.controllers.js";
-import {
   authenticate,
   isOB,
   isOBOrTeamLead,
@@ -23,8 +19,6 @@ import {
   updateMeetingValidator,
   checkClashValidator,
   getMeetingsQueryValidator,
-  createCommentValidator,
-  getCommentsQueryValidator,
   userParamValidator,
 } from "../validators/index.js";
 
@@ -56,24 +50,6 @@ router.post(
   createMeetingValidator(),
   validate,
   createMeeting,
-);
-
-// 4. Comments on meetings
-router.get(
-  "/:id/comments",
-  authenticate,
-  userParamValidator("id"),
-  getCommentsQueryValidator(),
-  validate,
-  getMeetingComments,
-);
-router.post(
-  "/:id/comments",
-  authenticate,
-  userParamValidator("id"),
-  createCommentValidator(),
-  validate,
-  createMeetingComment,
 );
 
 // 5. Get meeting by ID

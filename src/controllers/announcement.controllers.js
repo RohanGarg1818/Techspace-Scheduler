@@ -219,7 +219,7 @@ export const updateAnnouncement = asyncHandler(async (req, res) => {
 
 /**
  * DELETE /api/v1/announcements/:id (creator or OB)
- * Permanently deletes the announcement and all comments on it
+ * Permanently deletes the announcement
  */
 export const deleteAnnouncement = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -239,14 +239,6 @@ export const deleteAnnouncement = asyncHandler(async (req, res) => {
       ErrorCodeEnum.FORBIDDEN,
       "Only the creator or an OB can delete this announcement",
     );
-  }
-
-  // Cascade delete all comments on this announcement
-  const allComments = await db.getAllComments();
-  for (const c of allComments) {
-    if (c.announcementId === id) {
-      await db.deleteComment(c.id);
-    }
   }
 
   await db.deleteAnnouncement(id);

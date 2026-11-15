@@ -460,7 +460,7 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
 
 /**
  * DELETE /api/v1/meetings/:id (OB only)
- * Hard deletes the meeting and all associated comments
+ * Hard deletes the meeting
  */
 export const deleteMeeting = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -468,14 +468,6 @@ export const deleteMeeting = asyncHandler(async (req, res) => {
   const meeting = await db.getMeetingById(id);
   if (!meeting) {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Meeting not found");
-  }
-
-  // Delete all comments associated with this meeting
-  const allComments = await db.getAllComments();
-  for (const c of allComments) {
-    if (c.meetingId === id) {
-      await db.deleteComment(c.id);
-    }
   }
 
   await db.deleteMeeting(id);
