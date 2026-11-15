@@ -1,5 +1,5 @@
 {
-  "name": "src",
+  "name": "techspace-scheduler-backend",
   "version": "1.0.0",
   "description": "A Shared meeting calendar and coordination website",
   "license": "ISC",
@@ -11,13 +11,17 @@
     "start": "node src/index.js",
     "format": "prettier --write \"**/*.{js,json,md}\"",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "migrate": "node scripts/migrate.js",
+    "createob": "node scripts/createOb.js",
+    "seed": "node scripts/seed.js",
+    "reset-db": "node scripts/reset-db.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.15.0",
     "globals": "^17.14.0",
-    "nodemon": "^3.1.14",
+    "nodemon": "^3.1.11",
     "prettier": "^3.10.1"
   },
   "dependencies": {
@@ -29,5 +33,8 @@
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.1",
     "uuid": "^14.0.3"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true
   }
 }
