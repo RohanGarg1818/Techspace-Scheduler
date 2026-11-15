@@ -1,5 +1,0 @@
-$kind: http-request
-description: API health check endpoint
-url: "{{baseUrl}}/healthcheck"
-method: GET
-order: 2000

@@ -1,7 +1,0 @@
-$kind: http-request
-description: Get a single comment by ID. Uses commentId variable.
-url: "{{baseUrl}}/comments/{{commentId}}"
-method: GET
-headers:
-  Authorization: Bearer {{token}}
-order: 8000
