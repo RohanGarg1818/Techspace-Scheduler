@@ -39,9 +39,7 @@ export const getAllTentativeMeetings = async () => {
     id: row.id,
     type: row.type,
     color: row.color,
-    team: row.team_id
-      ? { id: row.team_id, name: row.team_name }
-      : null,
+    team: row.team_id ? { id: row.team_id, name: row.team_name } : null,
     topic: row.topic,
     startDate: row.start_date,
     endDate: row.end_date,
@@ -101,9 +99,7 @@ export const getTentativeMeetingById = async (id) => {
     id: row.id,
     type: row.type,
     color: row.color,
-    team: row.team_id
-      ? { id: row.team_id, name: row.team_name }
-      : null,
+    team: row.team_id ? { id: row.team_id, name: row.team_name } : null,
     topic: row.topic,
     startDate: row.start_date,
     endDate: row.end_date,

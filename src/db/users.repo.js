@@ -3,6 +3,7 @@ import { buildUpdate } from "./helpers.js";
 
 const USER_SELECT = `
   SELECT u.id, u.name, u.email, u.password, u.role, u.ob_title, u.deleted_at,
+         u.password_changed_at,
          COALESCE(
            json_agg(json_build_object('teamId', ut.team_id, 'position', ut.position))
              FILTER (WHERE ut.team_id IS NOT NULL),
@@ -19,6 +20,8 @@ const mapUser = (r) => ({
   role: r.role,
   obTitle: r.ob_title,
   deletedAt: r.deleted_at,
+  passwordChangedAt:
+    r.password_changed_at === null ? null : Number(r.password_changed_at),
   teams: r.teams,
 });
 
@@ -105,6 +108,7 @@ export const updateUser = async (id, updates) => {
         role: "role",
         obTitle: "ob_title",
         deletedAt: "deleted_at",
+        passwordChangedAt: "password_changed_at",
       },
     );
     await client.query(text, values);

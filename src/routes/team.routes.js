@@ -8,7 +8,7 @@ import {
   addOrUpdateTeamMember,
   removeTeamMember,
 } from "../controllers/team.controllers.js";
-import { authenticate, isOB } from "../middlewares/auth.middleware.js";
+import { authenticate, can } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import {
   createTeamValidator,
@@ -21,21 +21,27 @@ import {
 
 const router = Router();
 
-// Authenticated users can view teams
-router.get("/", authenticate, getTeamsQueryValidator(), validate, getTeams);
+router.get(
+  "/",
+  authenticate,
+  can("teams.list"),
+  getTeamsQueryValidator(),
+  validate,
+  getTeams,
+);
 router.get(
   "/:id",
   authenticate,
+  can("teams.view"),
   userParamValidator("id"),
   validate,
   getTeamById,
 );
 
-// OB only routes
 router.post(
   "/",
   authenticate,
-  isOB,
+  can("teams.create"),
   createTeamValidator(),
   validate,
   createTeam,
@@ -43,7 +49,7 @@ router.post(
 router.patch(
   "/:id",
   authenticate,
-  isOB,
+  can("teams.update"),
   userParamValidator("id"),
   updateTeamValidator(),
   validate,
@@ -52,17 +58,16 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
-  isOB,
+  can("teams.delete"),
   userParamValidator("id"),
   validate,
   deleteTeam,
 );
 
-// Member management on teams (OB only)
 router.put(
   "/:id/members/:userId",
   authenticate,
-  isOB,
+  can("teams.manageMembers"),
   teamMemberParamsValidator(),
   teamMemberValidator(),
   validate,
@@ -71,7 +76,7 @@ router.put(
 router.delete(
   "/:id/members/:userId",
   authenticate,
-  isOB,
+  can("teams.manageMembers"),
   teamMemberParamsValidator(),
   validate,
   removeTeamMember,

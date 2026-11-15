@@ -4,13 +4,13 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import {
   ErrorCodeEnum,
-  UserRolesEnum,
   TeamTypeEnum,
   MeetingTypeEnum,
   MeetingColorEnum,
   MeetingStatusEnum,
 } from "../utils/constants.js";
-import { userLeadsTeam } from "../utils/userUtils.js";
+import { assertOwnerOrRole, assertTeamScope } from "../utils/access.js";
+import { RULES } from "../config/permissions.js";
 import {
   isEndDateAfterStartDate,
   isTimeRangeValid,
@@ -107,7 +107,6 @@ export const createTentativeMeeting = asyncHandler(async (req, res) => {
     location,
     link,
   } = req.body;
-  const isTeamLead = req.user.role === UserRolesEnum.TEAM_LEAD;
 
   if (!isEndDateAfterStartDate(startDate, endDate)) {
     throw new ApiError(
@@ -133,23 +132,8 @@ export const createTentativeMeeting = asyncHandler(async (req, res) => {
     );
   }
 
-  if (isTeamLead) {
-    if (!teamId) {
-      throw new ApiError(
-        400,
-        ErrorCodeEnum.VALIDATION_ERROR,
-        "teamId is required for team leads",
-      );
-    }
-
-    if (!userLeadsTeam(req.user, teamId)) {
-      throw new ApiError(
-        403,
-        ErrorCodeEnum.FORBIDDEN,
-        "You can only create tentative meetings for teams you lead or co-lead",
-      );
-    }
-  }
+  // Team rules come from TEAM_SCOPE in config/permissions.js
+  assertTeamScope(req.user, "tentativeMeetings", teamId);
 
   let meetingType;
   let meetingColor;
@@ -260,19 +244,16 @@ export const updateTentativeMeeting = asyncHandler(async (req, res) => {
     );
   }
 
-  const isOB = req.user.role === UserRolesEnum.OB;
-  const isCreator =
-    tentativeMeeting.createdBy && tentativeMeeting.createdBy.id === req.user.id;
+  assertOwnerOrRole(
+    req.user,
+    "tentativeMeetings.update",
+    tentativeMeeting.createdBy?.id,
+  );
 
-  if (!isOB && !isCreator) {
-    throw new ApiError(
-      403,
-      ErrorCodeEnum.FORBIDDEN,
-      "Only the creator or an OB can edit this tentative meeting",
-    );
-  }
-
-  if (tentativeMeeting.status === MeetingStatusEnum.CANCELLED) {
+  if (
+    tentativeMeeting.status === MeetingStatusEnum.CANCELLED &&
+    !RULES.tentativeMeetings.allowEditCancelled
+  ) {
     throw new ApiError(
       409,
       ErrorCodeEnum.CONFLICT,
@@ -339,13 +320,7 @@ export const updateTentativeMeeting = asyncHandler(async (req, res) => {
   let teamUpdates = {};
   if (teamId !== undefined) {
     if (teamId === null) {
-      if (!isOB) {
-        throw new ApiError(
-          403,
-          ErrorCodeEnum.FORBIDDEN,
-          "Only OBs can create or change a tentative meeting to an OB meeting",
-        );
-      }
+      assertTeamScope(req.user, "tentativeMeetings", null);
       teamUpdates = {
         team: null,
         type: MeetingTypeEnum.OB,
@@ -357,15 +332,7 @@ export const updateTentativeMeeting = asyncHandler(async (req, res) => {
         throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Team not found");
       }
 
-      if (!isOB) {
-        if (!userLeadsTeam(req.user, teamId)) {
-          throw new ApiError(
-            403,
-            ErrorCodeEnum.FORBIDDEN,
-            "You can only assign tentative meetings to teams you lead or co-lead",
-          );
-        }
-      }
+      assertTeamScope(req.user, "tentativeMeetings", team.id);
 
       teamUpdates = {
         team: { id: team.id, name: team.name },
@@ -456,17 +423,11 @@ export const cancelTentativeMeeting = asyncHandler(async (req, res) => {
     );
   }
 
-  const isOB = req.user.role === UserRolesEnum.OB;
-  const isCreator =
-    tentativeMeeting.createdBy && tentativeMeeting.createdBy.id === req.user.id;
-
-  if (!isOB && !isCreator) {
-    throw new ApiError(
-      403,
-      ErrorCodeEnum.FORBIDDEN,
-      "Only the creator or an OB can cancel this tentative meeting",
-    );
-  }
+  assertOwnerOrRole(
+    req.user,
+    "tentativeMeetings.cancel",
+    tentativeMeeting.createdBy?.id,
+  );
 
   if (tentativeMeeting.status === MeetingStatusEnum.CANCELLED) {
     throw new ApiError(
@@ -485,11 +446,7 @@ export const cancelTentativeMeeting = asyncHandler(async (req, res) => {
   res
     .status(200)
     .json(
-      new ApiResponse(
-        200,
-        updated,
-        "Tentative meeting cancelled successfully",
-      ),
+      new ApiResponse(200, updated, "Tentative meeting cancelled successfully"),
     );
 });
 

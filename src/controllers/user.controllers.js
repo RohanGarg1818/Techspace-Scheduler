@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ErrorCodeEnum, UserRolesEnum } from "../utils/constants.js";
+import { RULES } from "../config/permissions.js";
 import { hashPassword } from "../utils/passwordUtils.js";
 import {
   formatUserResponse,
@@ -149,8 +150,12 @@ export const updateUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "User not found");
   }
 
-  // An OB cannot change their own role
-  if (role !== undefined && req.user.id === user.id && role !== user.role) {
+  if (
+    !RULES.users.allowSelfRoleChange &&
+    role !== undefined &&
+    req.user.id === user.id &&
+    role !== user.role
+  ) {
     throw new ApiError(
       403,
       ErrorCodeEnum.FORBIDDEN,
@@ -161,16 +166,16 @@ export const updateUser = asyncHandler(async (req, res) => {
   // Cannot demote the last remaining OB
   if (
     role !== undefined &&
-    user.role === UserRolesEnum.OB &&
-    role !== UserRolesEnum.OB
+    role !== user.role &&
+    RULES.users.protectedRoles.includes(user.role)
   ) {
     const allUsers = await db.getAllUsers();
-    const obCount = allUsers.filter((u) => u.role === UserRolesEnum.OB).length;
-    if (obCount <= 1) {
+    const remaining = allUsers.filter((u) => u.role === user.role).length;
+    if (remaining <= 1) {
       throw new ApiError(
         409,
         ErrorCodeEnum.CONFLICT,
-        "Cannot demote the last remaining OB",
+        `Cannot demote the last remaining ${user.role.toUpperCase()}`,
       );
     }
   }
@@ -230,8 +235,8 @@ export const deleteUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "User not found");
   }
 
-  // You cannot delete yourself
-  if (req.user.id === user.id) {
+  // Self-delete is controlled by RULES.users.allowSelfDelete
+  if (!RULES.users.allowSelfDelete && req.user.id === user.id) {
     throw new ApiError(
       409,
       ErrorCodeEnum.CONFLICT,
@@ -240,14 +245,14 @@ export const deleteUser = asyncHandler(async (req, res) => {
   }
 
   // Cannot delete the last remaining OB
-  if (user.role === UserRolesEnum.OB) {
+  if (RULES.users.protectedRoles.includes(user.role)) {
     const allUsers = await db.getAllUsers();
-    const obCount = allUsers.filter((u) => u.role === UserRolesEnum.OB).length;
-    if (obCount <= 1) {
+    const remaining = allUsers.filter((u) => u.role === user.role).length;
+    if (remaining <= 1) {
       throw new ApiError(
         409,
         ErrorCodeEnum.CONFLICT,
-        "You cannot delete the last OB",
+        `You cannot delete the last ${user.role.toUpperCase()}`,
       );
     }
   }

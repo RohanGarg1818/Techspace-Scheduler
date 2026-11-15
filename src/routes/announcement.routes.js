@@ -6,10 +6,7 @@ import {
   updateAnnouncement,
   deleteAnnouncement,
 } from "../controllers/announcement.controllers.js";
-import {
-  authenticate,
-  isOBOrTeamLead,
-} from "../middlewares/auth.middleware.js";
+import { authenticate, can } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import {
   createAnnouncementValidator,
@@ -20,48 +17,48 @@ import {
 
 const router = Router();
 
-// 1. Get announcements (all authenticated users)
 router.get(
   "/",
   authenticate,
+  can("announcements.list"),
   getAnnouncementsQueryValidator(),
   validate,
   getAnnouncements,
 );
 
-// 2. Create announcement (OB or team_lead)
 router.post(
   "/",
   authenticate,
-  isOBOrTeamLead,
+  can("announcements.create"),
   createAnnouncementValidator(),
   validate,
   createAnnouncement,
 );
 
-// 3. Get announcement by ID
 router.get(
   "/:id",
   authenticate,
+  can("announcements.view"),
   userParamValidator("id"),
   validate,
   getAnnouncementById,
 );
 
-// 4. Update announcement (creator or OB)
+// creator / ownerOr roles are enforced in the controller
 router.patch(
   "/:id",
   authenticate,
+  can("announcements.update"),
   userParamValidator("id"),
   updateAnnouncementValidator(),
   validate,
   updateAnnouncement,
 );
 
-// 5. Delete announcement permanently (creator or OB)
 router.delete(
   "/:id",
   authenticate,
+  can("announcements.delete"),
   userParamValidator("id"),
   validate,
   deleteAnnouncement,

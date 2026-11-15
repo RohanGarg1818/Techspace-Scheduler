@@ -4,11 +4,10 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import {
   ErrorCodeEnum,
-  UserRolesEnum,
   AnnouncementTypeEnum,
   AnnouncementPriorityEnum,
 } from "../utils/constants.js";
-import { userLeadsTeam } from "../utils/userUtils.js";
+import { assertOwnerOrRole, assertTeamScope } from "../utils/access.js";
 import db from "../db/index.js";
 
 /**
@@ -95,9 +94,6 @@ export const getAnnouncementById = asyncHandler(async (req, res) => {
 export const createAnnouncement = asyncHandler(async (req, res) => {
   const { title, content, priority, isPinned, teamId } = req.body;
 
-  const isOB = req.user.role === UserRolesEnum.OB;
-  const isTeamLead = req.user.role === UserRolesEnum.TEAM_LEAD;
-
   let announcementType;
   let teamObj = null;
 
@@ -107,27 +103,13 @@ export const createAnnouncement = asyncHandler(async (req, res) => {
       throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Team not found");
     }
 
-    if (isTeamLead) {
-      if (!userLeadsTeam(req.user, teamId)) {
-        throw new ApiError(
-          403,
-          ErrorCodeEnum.FORBIDDEN,
-          "You can only create announcements for teams you lead or co-lead",
-        );
-      }
-    }
+    assertTeamScope(req.user, "announcements", team.id);
 
     announcementType = AnnouncementTypeEnum.TEAM;
     teamObj = { id: team.id, name: team.name };
   } else {
-    // If teamId is omitted or null, only OB can create a society-wide announcement
-    if (!isOB) {
-      throw new ApiError(
-        403,
-        ErrorCodeEnum.FORBIDDEN,
-        "Only OBs can create society-wide announcements",
-      );
-    }
+    // Society-wide: allowed only if the role's TEAM_SCOPE has allowNoTeam
+    assertTeamScope(req.user, "announcements", null);
 
     announcementType = AnnouncementTypeEnum.SOCIETY;
   }
@@ -170,17 +152,11 @@ export const updateAnnouncement = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Announcement not found");
   }
 
-  const isOB = req.user.role === UserRolesEnum.OB;
-  const isCreator =
-    announcement.createdBy && announcement.createdBy.id === req.user.id;
-
-  if (!isOB && !isCreator) {
-    throw new ApiError(
-      403,
-      ErrorCodeEnum.FORBIDDEN,
-      "Only the creator or an OB can edit this announcement",
-    );
-  }
+  assertOwnerOrRole(
+    req.user,
+    "announcements.update",
+    announcement.createdBy?.id,
+  );
 
   const hasUpdates = [title, content, priority, isPinned].some(
     (field) => field !== undefined,
@@ -229,17 +205,11 @@ export const deleteAnnouncement = asyncHandler(async (req, res) => {
     throw new ApiError(404, ErrorCodeEnum.NOT_FOUND, "Announcement not found");
   }
 
-  const isOB = req.user.role === UserRolesEnum.OB;
-  const isCreator =
-    announcement.createdBy && announcement.createdBy.id === req.user.id;
-
-  if (!isOB && !isCreator) {
-    throw new ApiError(
-      403,
-      ErrorCodeEnum.FORBIDDEN,
-      "Only the creator or an OB can delete this announcement",
-    );
-  }
+  assertOwnerOrRole(
+    req.user,
+    "announcements.delete",
+    announcement.createdBy?.id,
+  );
 
   await db.deleteAnnouncement(id);
 
