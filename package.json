@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
+    "migrate": "node src/db/migrate.js",
     "format": "prettier --write \"**/*.{js,json,md}\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
