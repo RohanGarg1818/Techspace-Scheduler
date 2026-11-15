@@ -68,20 +68,3 @@ CREATE TABLE announcements (
 CREATE INDEX idx_announcements_feed ON announcements (is_pinned DESC, created_at DESC);
 CREATE INDEX idx_announcements_team ON announcements (team_id);
 
-CREATE TABLE comments (
-    id                 TEXT PRIMARY KEY,
-    announcement_id    TEXT REFERENCES announcements(id) ON DELETE CASCADE,
-    meeting_id         TEXT REFERENCES meetings(id) ON DELETE CASCADE,
-    parent_comment_id  TEXT REFERENCES comments(id) ON DELETE CASCADE,
-    content            TEXT NOT NULL,
-    created_by         TEXT NOT NULL REFERENCES users(id),
-    created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at         TIMESTAMPTZ,
-    -- a comment belongs to exactly one of: an announcement or a meeting
-    CONSTRAINT chk_comments_one_target CHECK (num_nonnulls(announcement_id, meeting_id) = 1)
-);
-CREATE INDEX idx_comments_announcement ON comments (announcement_id);
-CREATE INDEX idx_comments_meeting ON comments (meeting_id);
-CREATE INDEX idx_comments_parent ON comments (parent_comment_id);
-
-
